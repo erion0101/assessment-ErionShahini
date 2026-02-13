@@ -50,3 +50,6 @@ Thumbs.db
 # App / secrets (optional – keep if you don't want to commit DB or secrets)
 # app.db
 # appsettings.Development.json
+
+# Uploaded files (videos on disk)
+uploads/

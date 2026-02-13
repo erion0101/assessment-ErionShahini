@@ -29,6 +29,8 @@ builder.Services.AddScoped<IRegisterRepository, RegisterRepository>();
 builder.Services.AddScoped<IRegisterService, RegisterService>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IVideoRepository, VideoRepository>();
+builder.Services.AddScoped<IVideoService, VideoService>();
 builder.Services.AddHttpContextAccessor();
 
 var jwtSecret = builder.Configuration["JwtSettings:Secret"] ?? throw new InvalidOperationException("JwtSettings:Secret not set.");
@@ -44,11 +46,16 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidIssuer = builder.Configuration["JwtSettings:Issuer"]?.Trim(),
             ValidAudience = builder.Configuration["JwtSettings:Audience"]?.Trim(),
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
-            ClockSkew = TimeSpan.FromMinutes(2)
+            ClockSkew = TimeSpan.FromMinutes(2),
+            NameClaimType = System.Security.Claims.ClaimTypes.NameIdentifier,
+            RoleClaimType = System.Security.Claims.ClaimTypes.Role
         };
+        // Siguron që claim "sub" nga JWT të mapehet te ClaimsPrincipal (për User.Id)
+        options.MapInboundClaims = false;
     });
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddApplicationPart(typeof(assessment_erionshahini_API.Controllers.VideosController).Assembly);
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
@@ -79,7 +86,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
+app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 

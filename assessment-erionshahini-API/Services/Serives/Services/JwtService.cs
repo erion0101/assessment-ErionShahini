@@ -20,9 +20,11 @@ public class JwtService : IJwtService
 
     public string GenerateToken(User user, IList<string> roles)
     {
+        var userId = user.Id.ToString();
         var claims = new List<Claim>
         {
-            new(ClaimTypes.NameIdentifier, user.Id.ToString()),
+            new(ClaimTypes.NameIdentifier, userId),
+            new(JwtRegisteredClaimNames.Sub, userId), // claim standard JWT – që middleware ta gjejë
             new(ClaimTypes.Email, user.Email ?? string.Empty),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };

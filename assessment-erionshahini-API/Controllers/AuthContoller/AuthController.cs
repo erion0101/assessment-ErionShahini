@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Services;
 using Services.DTOs;
+using System.Security.Claims;
 
 namespace assessment_erionshahini_API.Controllers.AuthContoller;
 
@@ -74,14 +75,19 @@ public class AuthController : ControllerBase
         return Ok(CreateAuthResponse(result.Data));
     }
 
-    /// <summary>Current user info from JWT (id, email, roles). Requires valid access token.</summary>
-    [HttpGet("me")]
+    /// <summary>Current user info from JWT (id, email, roles). Requires valid access token. GET api/auth/Me</summary>
+    [HttpGet]
+    [Route("[action]")]
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     public IActionResult Me()
     {
-        var id = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-        var email = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
-        var roles = User.FindAll(System.Security.Claims.ClaimTypes.Role).Select(c => c.Value).ToList();
+        var id = User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier)
+                  ?? User.FindFirstValue("sub");
+        var email = User.FindFirstValue(System.Security.Claims.ClaimTypes.Email)
+                    ?? User.FindFirstValue("email");
+        var roles = User.FindAll(System.Security.Claims.ClaimTypes.Role)
+            .Select(c => c.Value)
+            .ToList();
         if (string.IsNullOrEmpty(id))
             return Unauthorized();
         return Ok(new { id, email, roles });
