@@ -34,4 +34,11 @@ public class VideoRepository : IVideoRepository
         return await _context.Videos
             .FirstOrDefaultAsync(v => v.Id == id, cancellationToken);
     }
+
+    public async Task<IReadOnlyList<Video>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        return await _context.Videos
+            .OrderByDescending(v => v.UploadedAt)
+            .ToListAsync(cancellationToken);
+    }
 }

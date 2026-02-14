@@ -76,6 +76,12 @@ public class VideoService : IVideoService
         return (fullPath, video.ContentType ?? "application/octet-stream");
     }
 
+    public async Task<IReadOnlyList<VideoResponse>> GetAllVideosAsync(CancellationToken cancellationToken = default)
+    {
+        var list = await _videoRepository.GetAllAsync(cancellationToken);
+        return list.Select(ToResponse).ToList();
+    }
+
     private static VideoResponse ToResponse(Video v)
     {
         return new VideoResponse

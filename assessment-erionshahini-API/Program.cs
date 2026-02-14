@@ -31,6 +31,10 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IVideoRepository, VideoRepository>();
 builder.Services.AddScoped<IVideoService, VideoService>();
+builder.Services.AddScoped<IAnnotationRepository, AnnotationRepository>();
+builder.Services.AddScoped<IAnnotationService, AnnotationService>();
+builder.Services.AddScoped<IBookmarkRepository, BookmarkRepository>();
+builder.Services.AddScoped<IBookmarkService, BookmarkService>();
 builder.Services.AddHttpContextAccessor();
 
 var jwtSecret = builder.Configuration["JwtSettings:Secret"] ?? throw new InvalidOperationException("JwtSettings:Secret not set.");
