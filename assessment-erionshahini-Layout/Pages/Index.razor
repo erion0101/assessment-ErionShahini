@@ -1,9 +1,122 @@
-﻿@page "/"
+@page "/"
+@using Microsoft.AspNetCore.Components.Authorization
+@layout EmptyLayout
+@using assessment_erionshahini_Layout.Data
+@using assessment_erionshahini_Layout.Service
+@using assessment_erionshahini_Layout.ConnetionsWithAPIs
 
-<PageTitle>Index</PageTitle>
+<PageTitle>Login</PageTitle>
 
-<h1>Hello, world!</h1>
+<div class="login-container">
+    <div class="login-card">
+        <h1>Login</h1>
 
-Welcome to your new app.
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="alert alert-danger" role="alert">@errorMessage</div>
+        }
 
-<SurveyPrompt Title="How is Blazor working for you?" />
+        <EditForm Model="loginRequest" OnValidSubmit="HandleLogin">
+            <div class="form-group">
+                <label class="form-label" for="email">Email</label>
+                <InputText id="email" @bind-Value="loginRequest.Email" class="form-control" placeholder="Email" />
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="password">Password</label>
+                <InputText id="password" type="password" @bind-Value="loginRequest.Password" class="form-control" placeholder="Password" />
+            </div>
+            <button type="submit" class="btn btn-primary" disabled="@isLoading">
+                @if (isLoading)
+                {
+                    <span>Logging in...</span>
+                }
+                else
+                {
+                    <span>Login</span>
+                }
+            </button>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    [Inject] private IJSRuntime JS { get; set; } = null!;
+    [Inject] private IConfiguration Configuration { get; set; } = null!;
+    [Inject] private TokenStorageService TokenStorage { get; set; } = null!;
+    [Inject] private NavigationManager Navigation { get; set; } = null!;
+    [Inject] private AuthenticationStateProvider AuthenticationStateProvider { get; set; } = null!;
+
+    private LoginRequest loginRequest = new();
+    private string? errorMessage;
+    private bool isLoading;
+
+    private async Task HandleLogin()
+    {
+        isLoading = true;
+        errorMessage = null;
+
+        try
+        {
+            var apiBaseUrl = Configuration["ApiSettings:BaseUrl"] ?? "";
+            var result = await JS.InvokeAsync<LoginJsResult>("loginFromBrowser", apiBaseUrl, loginRequest.Email, loginRequest.Password);
+
+            if (result.Success && !string.IsNullOrEmpty(result.AccessToken))
+            {
+                TokenStorage.SetAccessToken(result.AccessToken);
+                if (AuthenticationStateProvider is JwtAuthenticationStateProvider jwtAuthProvider)
+                    jwtAuthProvider.NotifyUserAuthentication();
+
+                var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+                var user = authState.User;
+
+                if (user.IsInRole("Admin"))
+                    Navigation.NavigateTo("/admin", forceLoad: false);
+                else
+                    Navigation.NavigateTo("/fetchdata", forceLoad: false);
+            }
+            else
+            {
+                errorMessage = result.Message ?? "Login failed. Please check your credentials.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private class LoginJsResult
+    {
+        public bool Success { get; set; }
+        public string? AccessToken { get; set; }
+        public string? Message { get; set; }
+    }
+}
+
+<style>
+    .login-container {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .login-card {
+        background: white;
+        border-radius: 16px;
+        padding: 2rem;
+        box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+        max-width: 400px;
+        width: 100%;
+    }
+    .form-label { display: block; margin-bottom: 0.5rem; font-weight: 500; color: #374151; }
+    .form-control { width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 8px; }
+    .form-group { margin-bottom: 1rem; }
+    .btn-primary { background: #3b82f6; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 600; cursor: pointer; }
+    .btn-primary:disabled { opacity: 0.7; cursor: not-allowed; }
+    .alert-danger { background: #fee2e2; border: 1px solid #fca5a5; color: #991b1b; padding: 0.75rem; border-radius: 8px; margin-bottom: 1rem; }
+</style>

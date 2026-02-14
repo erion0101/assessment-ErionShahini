@@ -66,6 +66,21 @@ public class UserService : IUserService
         await _userRepository.UpdateUserAsync(user, cancellationToken);
     }
 
+    public async Task LogoutByRefreshTokenAsync(string? refreshToken, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrEmpty(refreshToken))
+            return;
+
+        var user = await _userRepository.FindByRefreshTokenAsync(refreshToken, cancellationToken);
+        if (user == null)
+            return;
+
+        user.RefreshToken = null;
+        user.RefreshTokenExpiry = null;
+        user.RefreshTokenIp = null;
+        await _userRepository.UpdateUserAsync(user, cancellationToken);
+    }
+
     public async Task<Result<AuthResult>> RefreshTokenAsync(string? refreshToken, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrEmpty(refreshToken))

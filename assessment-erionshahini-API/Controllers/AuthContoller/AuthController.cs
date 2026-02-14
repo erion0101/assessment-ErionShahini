@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+
 using Services;
 using Services.DTOs;
 using System.Security.Claims;
@@ -31,7 +32,7 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> Register([FromBody] RegisterRequest request, CancellationToken cancellationToken)
     {
         var result = await _registerService.RegisterAsync(request, cancellationToken);
-
+        
         if (!result.IsSuccess)
             return BadRequest(result.Error);
 
@@ -58,6 +59,17 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> Logout(CancellationToken cancellationToken)
     {
         await _userService.LogoutAsync(cancellationToken);
+        ClearRefreshTokenCookie();
+        return Ok(new { message = "Logged out successfully." });
+    }
+
+    /// <summary>Logout by refresh token from cookie only. Call from browser with credentials so the response clears the cookie.</summary>
+    [HttpPost("logout-by-cookie")]
+    [AllowAnonymous]
+    public async Task<IActionResult> LogoutByCookie(CancellationToken cancellationToken)
+    {
+        var refreshToken = Request.Cookies[RefreshTokenCookieName];
+        await _userService.LogoutByRefreshTokenAsync(refreshToken, cancellationToken);
         ClearRefreshTokenCookie();
         return Ok(new { message = "Logged out successfully." });
     }

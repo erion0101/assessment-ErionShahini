@@ -1,4 +1,4 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
+<div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
         <a class="navbar-brand" href="">assessment-erionshahini-Layout</a>
         <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
@@ -24,10 +24,41 @@
                 <span class="oi oi-list-rich" aria-hidden="true"></span> Fetch data
             </NavLink>
         </div>
+        <AuthorizeView>
+            <Authorized>
+                <div class="nav-item px-3">
+                    <button class="nav-link btn btn-link" @onclick="Logout">
+                        <span class="oi oi-account-logout" aria-hidden="true"></span> Logout
+                    </button>
+                </div>
+            </Authorized>
+        </AuthorizeView>
     </nav>
 </div>
 
 @code {
+    [Inject] private ApiAuthService AuthService { get; set; } = null!;
+    [Inject] private AuthenticationStateProvider AuthenticationStateProvider { get; set; } = null!;
+    [Inject] private NavigationManager Navigation { get; set; } = null!;
+    [Inject] private IJSRuntime JS { get; set; } = null!;
+    [Inject] private IConfiguration Configuration { get; set; } = null!;
+
+    private async Task Logout()
+    {
+        var apiBaseUrl = Configuration["ApiSettings:BaseUrl"];
+        try
+        {
+            await JS.InvokeVoidAsync("logoutClearCookie", apiBaseUrl);
+        }
+        catch
+        {
+            // Nëse JS ose API nuk janë të disponueshëm, vazhdojmë me pastrimin lokal.
+        }
+        await AuthService.LogoutAsync();
+        if (AuthenticationStateProvider is JwtAuthenticationStateProvider jwtAuth)
+            jwtAuth.NotifyUserLogout();
+        Navigation.NavigateTo("/", forceLoad: true);
+    }
     private bool collapseNavMenu = true;
 
     private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
