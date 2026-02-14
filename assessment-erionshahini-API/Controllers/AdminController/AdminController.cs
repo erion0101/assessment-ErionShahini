@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Services;
@@ -5,10 +6,9 @@ using Services.DTOs;
 
 namespace assessment_erionshahini_API.Controllers;
 
-/// <summary>Admin-only: listat e të gjitha videove, shënimeve dhe faqerojtësve. Sipas detyrës Internship 2026.</summary>
 [Route("api/[controller]")]
 [ApiController]
-//[Authorize(Roles = "Admin")]
+[Authorize(Roles = "Admin", AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class AdminController : ControllerBase
 {
     private readonly IVideoService _videoService;

@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Services;
@@ -8,7 +9,7 @@ namespace assessment_erionshahini_API.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-//[Authorize]
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class BookmarksController : ControllerBase
 {
     private readonly IBookmarkService _bookmarkService;
@@ -26,11 +27,9 @@ public class BookmarksController : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Create([FromBody] CreateBookmarkRequest request, CancellationToken cancellationToken)
     {
-        //var userId = GetCurrentUserId();
-        //if (userId == null) return Unauthorized();
-        Guid guid = Guid.Parse("695B235C-F6D2-4EC9-A60B-EC2F19CEA460");
-
-        var result = await _bookmarkService.CreateAsync(guid, request, cancellationToken);
+        var userId = GetCurrentUserId();
+        if (userId == null) return Unauthorized();
+        var result = await _bookmarkService.CreateAsync(userId.Value, request, cancellationToken);
         if (!result.IsSuccess)
             return BadRequest(result.Error);
 
@@ -51,10 +50,9 @@ public class BookmarksController : ControllerBase
     [Route("[action]")]
     public async Task<IActionResult> GetMyBookmarks(CancellationToken cancellationToken)
     {
-        //var userId = GetCurrentUserId();
-        //if (userId == null) return Unauthorized();
-        Guid guid = Guid.Parse("695B235C-F6D2-4EC9-A60B-EC2F19CEA460");
-        var list = await _bookmarkService.GetMyBookmarksAsync(guid, cancellationToken);
+        var userId = GetCurrentUserId();
+        if (userId == null) return Unauthorized();
+        var list = await _bookmarkService.GetMyBookmarksAsync(userId.Value, cancellationToken);
         return Ok(list);
     }
 
@@ -73,11 +71,9 @@ public class BookmarksController : ControllerBase
     [Route("[action]/{id:guid}")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateBookmarkRequest request, CancellationToken cancellationToken)
     {
-        //var userId = GetCurrentUserId();
-        //if (userId == null) return Unauthorized();
-        Guid guid = Guid.Parse("695B235C-F6D2-4EC9-A60B-EC2F19CEA460");
-
-        var result = await _bookmarkService.UpdateAsync(id, guid, request, cancellationToken);
+        var userId = GetCurrentUserId();
+        if (userId == null) return Unauthorized();
+        var result = await _bookmarkService.UpdateAsync(id, userId.Value, request, cancellationToken);
         if (!result.IsSuccess)
             return result.Error == "Bookmark not found." ? NotFound() : BadRequest(result.Error);
 
@@ -89,21 +85,20 @@ public class BookmarksController : ControllerBase
     [Route("[action]/{id:guid}")]
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {
-        //var userId = GetCurrentUserId();
-        //if (userId == null) return Unauthorized();
-        Guid guid = Guid.Parse("695B235C-F6D2-4EC9-A60B-EC2F19CEA460");
-
-        var result = await _bookmarkService.DeleteAsync(id, guid, cancellationToken);
+        var userId = GetCurrentUserId();
+        if (userId == null) return Unauthorized();
+        var result = await _bookmarkService.DeleteAsync(id, userId.Value, cancellationToken);
         if (!result.IsSuccess)
             return result.Error == "Bookmark not found." ? NotFound() : BadRequest(result.Error);
 
         return NoContent();
     }
 
+    /// <summary>E njëjta logjikë si api/auth/Me. Me MapInboundClaims=false claim është "sub".</summary>
     private Guid? GetCurrentUserId()
     {
-        var id = User.FindFirstValue(ClaimTypes.NameIdentifier)
-                  ?? User.FindFirstValue("sub");
+        var id = User.FindFirstValue("sub")
+                  ?? User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier);
         return Guid.TryParse(id, out var guid) ? guid : null;
     }
 }

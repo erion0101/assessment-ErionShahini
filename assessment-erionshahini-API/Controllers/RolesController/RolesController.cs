@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Services;
@@ -6,6 +7,7 @@ namespace assessment_erionshahini_API.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
+[Authorize (Roles = "Admin")]
 public class RolesController : ControllerBase
 {
     private readonly IRoleService _roleService;

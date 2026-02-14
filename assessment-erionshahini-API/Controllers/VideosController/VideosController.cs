@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -9,7 +10,7 @@ namespace assessment_erionshahini_API.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-[Authorize]
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class VideosController : ControllerBase
 {
     private readonly IVideoService _videoService;
@@ -42,13 +43,11 @@ public class VideosController : ControllerBase
 
     [HttpGet]
     [Route("[action]")]
-    [AllowAnonymous] 
     public async Task<IActionResult> GetMyVideos(CancellationToken cancellationToken)
     {
-        //var userId = GetCurrentUserId();
-        //if (userId == null) return Unauthorized();
-        Guid guid = Guid.Parse("695B235C-F6D2-4EC9-A60B-EC2F19CEA460");
-        var list = await _videoService.GetMyVideosAsync(guid, cancellationToken);
+        var userId = GetCurrentUserId();
+        if (userId == null) return Unauthorized();
+        var list = await _videoService.GetMyVideosAsync(userId.Value, cancellationToken);
         return Ok(list);
     }
 
@@ -74,11 +73,11 @@ public class VideosController : ControllerBase
         return PhysicalFile(fullPath, contentType ?? "application/octet-stream", enableRangeProcessing: true);
     }
 
+    /// <summary>E njëjta logjikë si api/auth/Me. Me MapInboundClaims=false claim është "sub".</summary>
     private Guid? GetCurrentUserId()
     {
-        // JWT e ruan id e userit si NameIdentifier ose si "sub" (claim standard JWT) – kontrollo të dyja
-        var id = User.FindFirstValue(ClaimTypes.NameIdentifier)
-                  ?? User.FindFirstValue("sub");
+        var id = User.FindFirstValue("sub")
+                  ?? User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier);
         return Guid.TryParse(id, out var guid) ? guid : null;
     }
 }

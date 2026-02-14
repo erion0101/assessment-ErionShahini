@@ -9,6 +9,7 @@ namespace assessment_erionshahini_API.Controllers.AuthContoller;
 
 [Route("api/auth")]
 [ApiController]
+//[Authorize(Roles = "User")]
 public class AuthController : ControllerBase
 {
     private const string RefreshTokenCookieName = "refreshToken";
@@ -75,14 +76,13 @@ public class AuthController : ControllerBase
         return Ok(CreateAuthResponse(result.Data));
     }
 
-    /// <summary>Current user info from JWT (id, email, roles). Requires valid access token. GET api/auth/Me</summary>
     [HttpGet]
     [Route("[action]")]
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     public IActionResult Me()
     {
-        var id = User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier)
-                  ?? User.FindFirstValue("sub");
+        var id = User.FindFirstValue("sub")
+                  ?? User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier);
         var email = User.FindFirstValue(System.Security.Claims.ClaimTypes.Email)
                     ?? User.FindFirstValue("email");
         var roles = User.FindAll(System.Security.Claims.ClaimTypes.Role)
