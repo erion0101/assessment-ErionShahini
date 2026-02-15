@@ -22,7 +22,13 @@ public class RegisterService : IRegisterService
         if (existingUser != null)
             return Result<AuthResult>.Failure("Email already exists.");
 
-        var role = await _registerRepository.FindRoleByIdAsync(request.RoleId, cancellationToken);
+        IdentityRole<Guid>? role = null;
+        if (request.RoleId.HasValue && request.RoleId.Value != Guid.Empty)
+            role = await _registerRepository.FindRoleByIdAsync(request.RoleId.Value, cancellationToken);
+
+        role ??= await _registerRepository.FindRoleByNameAsync("User", cancellationToken);
+        role ??= await _registerRepository.CreateRoleAsync("User", cancellationToken);
+
         if (role == null)
             return Result<AuthResult>.Failure("Role not found.");
 

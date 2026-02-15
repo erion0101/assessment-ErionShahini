@@ -24,6 +24,7 @@ public class VideoRepository : IVideoRepository
     public async Task<IReadOnlyList<Video>> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         return await _context.Videos
+            .Include(v => v.User)
             .Where(v => v.UserId == userId)
             .OrderByDescending(v => v.UploadedAt)
             .ToListAsync(cancellationToken);
@@ -32,12 +33,14 @@ public class VideoRepository : IVideoRepository
     public async Task<Video?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return await _context.Videos
+            .Include(v => v.User)
             .FirstOrDefaultAsync(v => v.Id == id, cancellationToken);
     }
 
     public async Task<IReadOnlyList<Video>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         return await _context.Videos
+            .Include(v => v.User)
             .OrderByDescending(v => v.UploadedAt)
             .ToListAsync(cancellationToken);
     }

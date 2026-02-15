@@ -1,68 +1,72 @@
-.navbar-toggler {
-    background-color: rgba(255, 255, 255, 0.1);
+.vl-nav-list {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
 }
 
-.top-row {
-    height: 3.5rem;
-    background-color: rgba(0,0,0,0.4);
+.vl-nav-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    color: rgba(248, 250, 252, 0.9);
+    text-decoration: none;
+    border-radius: var(--vl-radius-sm);
+    font-weight: 500;
+    font-size: 0.9375rem;
+    transition: background 0.2s, color 0.2s;
 }
 
-.navbar-brand {
-    font-size: 1.1rem;
-}
-
-.oi {
-    width: 2rem;
-    font-size: 1.1rem;
-    vertical-align: text-top;
-    top: -2px;
-}
-
-.nav-item {
-    font-size: 0.9rem;
-    padding-bottom: 0.5rem;
-}
-
-    .nav-item:first-of-type {
-        padding-top: 1rem;
-    }
-
-    .nav-item:last-of-type {
-        padding-bottom: 1rem;
-    }
-
-    .nav-item ::deep a {
-        color: #d7d7d7;
-        border-radius: 4px;
-        height: 3rem;
-        display: flex;
-        align-items: center;
-        line-height: 3rem;
-    }
-
-.nav-item ::deep a.active {
-    background-color: rgba(255,255,255,0.25);
+.vl-nav-item:hover {
+    background: rgba(255, 255, 255, 0.08);
     color: white;
 }
 
-.nav-item ::deep a:hover {
-    background-color: rgba(255,255,255,0.1);
-    color: white;
+.vl-nav-item.active {
+    background: var(--vl-accent-muted);
+    color: var(--vl-accent);
 }
 
-@media (min-width: 641px) {
-    .navbar-toggler {
-        display: none;
+.vl-nav-item .oi {
+    width: 1.125rem;
+    font-size: 1rem;
+    opacity: 0.9;
+}
+
+.vl-nav-logout {
+    margin-left: auto;
+}
+
+.vl-btn-logout {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    background: transparent;
+    border: none;
+    color: rgba(248, 250, 252, 0.9);
+    font: inherit;
+    font-weight: 500;
+    cursor: pointer;
+    border-radius: var(--vl-radius-sm);
+    transition: background 0.2s, color 0.2s;
+}
+
+.vl-btn-logout:hover {
+    background: rgba(239, 68, 68, 0.2);
+    color: #fca5a5;
+}
+
+@media (max-width: 767px) {
+    .vl-nav-list {
+        flex-direction: column;
+        align-items: stretch;
     }
 
-    .collapse {
-        /* Never collapse the sidebar for wide screens */
-        display: block;
-    }
-    
-    .nav-scrollable {
-        /* Allow sidebar to scroll for tall menus */
-        height: calc(100vh - 3.5rem);
-        overflow-y: auto;
+    .vl-nav-logout {
+        margin-left: 0;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        margin-top: 0.25rem;
+        padding-top: 0.5rem;
     }
 }

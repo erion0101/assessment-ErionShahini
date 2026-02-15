@@ -1,39 +1,30 @@
-<div class="top-row ps-3 navbar navbar-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="">assessment-erionshahini-Layout</a>
-        <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-    </div>
-</div>
-
-<div class="@NavMenuCssClass nav-scrollable" @onclick="ToggleNavMenu">
-    <nav class="flex-column">
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="oi oi-home" aria-hidden="true"></span> Home
+<div class="vl-nav-list">
+    <NavLink class="vl-nav-item" href="/user/index" Match="NavLinkMatch.Prefix">
+        <span class="oi oi-video" aria-hidden="true"></span>
+        <span>My Videos</span>
+    </NavLink>
+    <NavLink class="vl-nav-item" href="/user/upload">
+        <span class="oi oi-plus" aria-hidden="true"></span>
+        <span>Upload</span>
+    </NavLink>
+    <AuthorizeView Roles="Admin">
+        <Authorized>
+            <NavLink class="vl-nav-item" href="/admin">
+                <span class="oi oi-cog" aria-hidden="true"></span>
+                <span>Admin</span>
             </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="counter">
-                <span class="oi oi-plus" aria-hidden="true"></span> Counter
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="fetchdata">
-                <span class="oi oi-list-rich" aria-hidden="true"></span> Fetch data
-            </NavLink>
-        </div>
-        <AuthorizeView>
-            <Authorized>
-                <div class="nav-item px-3">
-                    <button class="nav-link btn btn-link" @onclick="Logout">
-                        <span class="oi oi-account-logout" aria-hidden="true"></span> Logout
-                    </button>
-                </div>
-            </Authorized>
-        </AuthorizeView>
-    </nav>
+        </Authorized>
+    </AuthorizeView>
+    <AuthorizeView>
+        <Authorized>
+            <div class="vl-nav-item vl-nav-logout">
+                <button type="button" class="vl-btn-logout" @onclick="Logout">
+                    <span class="oi oi-account-logout" aria-hidden="true"></span>
+                    <span>Logout</span>
+                </button>
+            </div>
+        </Authorized>
+    </AuthorizeView>
 </div>
 
 @code {
@@ -46,25 +37,11 @@
     private async Task Logout()
     {
         var apiBaseUrl = Configuration["ApiSettings:BaseUrl"];
-        try
-        {
-            await JS.InvokeVoidAsync("logoutClearCookie", apiBaseUrl);
-        }
-        catch
-        {
-            // Nëse JS ose API nuk janë të disponueshëm, vazhdojmë me pastrimin lokal.
-        }
+        try { await JS.InvokeVoidAsync("logoutClearCookie", apiBaseUrl); }
+        catch { }
         await AuthService.LogoutAsync();
         if (AuthenticationStateProvider is JwtAuthenticationStateProvider jwtAuth)
             jwtAuth.NotifyUserLogout();
         Navigation.NavigateTo("/", forceLoad: true);
-    }
-    private bool collapseNavMenu = true;
-
-    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
-
-    private void ToggleNavMenu()
-    {
-        collapseNavMenu = !collapseNavMenu;
     }
 }

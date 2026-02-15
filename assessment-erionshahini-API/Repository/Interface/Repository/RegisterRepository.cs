@@ -32,6 +32,24 @@ public class RegisterRepository : IRegisterRepository
         return await _roleManager.FindByIdAsync(roleId.ToString());
     }
 
+    public async Task<IdentityRole<Guid>?> FindRoleByNameAsync(string roleName, CancellationToken cancellationToken = default)
+    {
+        return await _roleManager.FindByNameAsync(roleName);
+    }
+
+    public async Task<IdentityRole<Guid>?> CreateRoleAsync(string roleName, CancellationToken cancellationToken = default)
+    {
+        var role = new IdentityRole<Guid>
+        {
+            Id = Guid.NewGuid(),
+            Name = roleName,
+            NormalizedName = roleName.ToUpperInvariant()
+        };
+
+        var result = await _roleManager.CreateAsync(role);
+        return result.Succeeded ? role : null;
+    }
+
     public async Task<IdentityResult> AddToRoleAsync(User user, string roleName, CancellationToken cancellationToken = default)
     {
         return await _userManager.AddToRoleAsync(user, roleName);

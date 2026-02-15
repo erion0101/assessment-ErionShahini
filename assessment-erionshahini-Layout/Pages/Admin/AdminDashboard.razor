@@ -1,0 +1,172 @@
+@page "/admin"
+@attribute [Authorize(Roles = "Admin")]
+@using assessment_erionshahini_Layout.Data
+@using assessment_erionshahini_Layout.Service
+@using System.Linq
+
+<PageTitle>Admin - Video Lab</PageTitle>
+
+<div class="vl-page">
+    <h1>All Videos</h1>
+    <p class="vl-text-muted">Manage and preview videos uploaded by users.</p>
+    @if (error != null)
+    {
+        <div class="vl-alert vl-alert-error">@error</div>
+    }
+
+    @if (loading)
+    {
+        <p class="vl-text-muted" style="margin-top: 1rem;">Loading admin data…</p>
+    }
+    else
+    {
+        @if (videos.Count == 0)
+        {
+            <div class="vl-card vl-empty-card">
+                <p class="vl-text-muted">Nuk ka video për momentin.</p>
+            </div>
+        }
+        else
+        {
+            <div class="vl-video-grid">
+                @foreach (var v in videos.OrderByDescending(x => x.UploadedAt))
+                {
+                    <article class="vl-card vl-video-card">
+                        <a href="/user/watch/@v.Id" class="vl-thumb-link" title="Open video">
+                            <video class="vl-thumb-video" preload="metadata" muted playsinline src="@GetPlayableUrl(v)"></video>
+                        </a>
+                        <div class="vl-video-card-body">
+                            <a href="/user/watch/@v.Id" class="vl-video-title">@v.Title</a>
+                            <p class="vl-video-uploader">@GetUploaderLabel(v)</p>
+                            <p class="vl-video-time">@FormatTimeAgo(v.UploadedAt)</p>
+                        </div>
+                    </article>
+                }
+            </div>
+        }
+    }
+</div>
+
+@code {
+    [Inject] private AuthenticatedApiClient Api { get; set; } = null!;
+    [Inject] private IConfiguration Config { get; set; } = null!;
+
+    private readonly List<VideoItem> videos = new();
+    private bool loading = true;
+    private string? error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var videosTask = Api.GetAdminVideosAsync();
+            await Task.WhenAll(videosTask);
+            videos.Clear();
+            videos.AddRange(videosTask.Result ?? Enumerable.Empty<VideoItem>());
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    private string GetPlayableUrl(VideoItem v)
+    {
+        var baseUrl = Config["ApiSettings:BaseUrl"]?.TrimEnd('/') ?? "";
+        var stream = v.StreamUrl?.TrimStart('/') ?? $"api/Videos/Stream/{v.Id}";
+        return $"{baseUrl}/{stream}";
+    }
+
+    private static string GetUploaderLabel(VideoItem v)
+    {
+        if (!string.IsNullOrWhiteSpace(v.UploaderName))
+            return v.UploaderName!;
+        if (!string.IsNullOrWhiteSpace(v.UploaderEmail))
+            return v.UploaderEmail!;
+        return v.UserId.ToString("N")[..8];
+    }
+
+    private static string FormatTimeAgo(DateTime uploadedAt)
+    {
+        var span = DateTime.UtcNow - uploadedAt.ToUniversalTime();
+        if (span.TotalMinutes < 1) return "just now";
+        if (span.TotalHours < 1) return $"{(int)span.TotalMinutes} min ago";
+        if (span.TotalDays < 1) return $"{(int)span.TotalHours} hour ago";
+        if (span.TotalDays < 2) return "1 day ago";
+        if (span.TotalDays < 30) return $"{(int)span.TotalDays} days ago";
+        var months = (int)(span.TotalDays / 30);
+        if (months < 2) return "1 month ago";
+        if (months < 12) return $"{months} months ago";
+        var years = (int)(span.TotalDays / 365);
+        return years < 2 ? "1 year ago" : $"{years} years ago";
+    }
+}
+
+<style>
+    .vl-empty-card {
+        margin-top: 1rem;
+        padding: 1rem;
+    }
+
+    .vl-video-grid {
+        margin-top: 1rem;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        gap: 1rem;
+    }
+
+    .vl-video-card {
+        overflow: hidden;
+        display: grid;
+        grid-template-rows: auto 1fr;
+    }
+
+    .vl-thumb-link {
+        display: block;
+        aspect-ratio: 1 / 1;
+        background: #000;
+        text-decoration: none;
+    }
+
+    .vl-thumb-video {
+        width: 100%;
+        height: 100%;
+        display: block;
+        object-fit: cover;
+        background: #000;
+    }
+
+    .vl-video-card-body {
+        padding: 0.75rem;
+        display: grid;
+        gap: 0.25rem;
+    }
+
+    .vl-video-title {
+        font-size: 1.05rem;
+        font-weight: 800;
+        line-height: 1.35;
+        color: var(--vl-text);
+        text-decoration: none;
+    }
+
+    .vl-video-title:hover {
+        text-decoration: underline;
+    }
+
+    .vl-video-uploader {
+        margin: 0;
+        font-size: 0.88rem;
+        color: var(--vl-text);
+    }
+
+    .vl-video-time {
+        margin: 0;
+        font-size: 0.82rem;
+        color: var(--vl-text-muted);
+    }
+</style>

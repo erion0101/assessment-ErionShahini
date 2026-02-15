@@ -1,93 +1,111 @@
-# assessment-erionshahini (Backend)
+# assessment-erionshahini
 
-API for the video application (assessment – Internship 2026): auth, roles, video/annotations/bookmarks. README is updated with each commit.
+Internship Assessment 2026 - Video Lab (API + Blazor Server UI).
 
----
+This project allows authenticated users to upload/watch videos, create annotations and bookmarks with timestamps, and use an admin view for global data.
 
-## Project status
+## Current status
 
-- [x] Auth: Register, Login, Logout, Refresh token, GET /me
-- [x] Roles: Identity roles (User, Admin), CRUD for roles
-- [x] DB: EF Core, SQL Server, migrations in `Repository/Migrations`
-- [ ] Video: upload, list (planned)
-- [ ] Annotations / Bookmarks (planned)
-- [ ] Admin: endpoint for all videos/annotations/bookmarks (planned)
+- [x] Authentication: Register, Login, Logout, Refresh token, `GET /api/auth/me`
+- [x] Authorization: JWT + role-based access (`User`, `Admin`)
+- [x] Video flow: Upload, My Videos, Watch (stream + seek support)
+- [x] Annotations: create/list/delete by video and user
+- [x] Bookmarks: create/list/delete by video and user
+- [x] Bookmark click seek to timestamp (frontend)
+- [x] Annotation playback visibility/highlight while video plays (frontend)
+- [x] Admin API: all videos/annotations/bookmarks
+- [x] Admin UI page connected to API (counts + lists)
 
----
+## Tech stack
+
+- Backend: ASP.NET Core Web API (.NET 8), EF Core, SQL Server, ASP.NET Identity, JWT
+- Frontend: Blazor Server (.NET 7)
+- Docs/testing: Swagger
+- Optional: Docker (API and SQL Server)
 
 ## How to run
 
-**Requirements:** .NET 8 SDK, SQL Server (local or Docker), optional Docker for the API.
+### 1) Prerequisites
 
-1. **Clone and restore**
-   ```bash
-   git clone <repo-url>
-   cd assessment-erionshahini-API
-   dotnet restore
-   ```
+- .NET SDK installed (8 for API, 7+ for Blazor project)
+- SQL Server (local or Docker)
 
-2. **Connection string**  
-   In `assessment-erionshahini-API/appsettings.json` set `ConnectionStrings:DefaultConnection` for your SQL Server.
-   - Local: `Server=localhost;Database=AssessmentErionShahiniDB;Trusted_Connection=True;TrustServerCertificate=True;`
-   - SQL Server in Docker:
-     ```bash
-     docker run -e "ACCEPT_EULA=Y" -e "MSSQL_SA_PASSWORD=YourStrong@Pass" -p 1433:1433 --name sqlserver -d mcr.microsoft.com/mssql/server:2022-latest
-     ```
-     Connection string: `Server=localhost,1433;Database=AssessmentErionShahiniDB;User Id=sa;Password=YourStrong@Pass;TrustServerCertificate=True;`
+### 2) Configure database connection
 
-3. **Migrations**
-   ```bash
-   cd assessment-erionshahini-API
-   dotnet ef database update --context ApplicationDbContext
-   ```
+In `assessment-erionshahini-API/appsettings.json`, set:
 
-4. **Run**
-   ```bash
-   cd assessment-erionshahini-API
-   dotnet run
-   ```
-   Swagger: `https://localhost:7294/swagger` (port may vary).
+- `ConnectionStrings:DefaultConnection`
+- `JwtSettings:Secret`, `JwtSettings:Issuer`, `JwtSettings:Audience`
 
-5. **Docker (API)**  
-   The database must be reachable from the container (e.g. SQL Server on the same network).
-   ```bash
-   docker build -t assessment-api -f assessment-erionshahini-API/Dockerfile .
-   docker run -p 8080:8080 -e ConnectionStrings__DefaultConnection="<connection-string>" -e JwtSettings__Secret="<secret>" assessment-api
-   ```
+Example local connection:
 
----
+`Server=localhost;Database=AssessmentErionShahiniDB;Trusted_Connection=True;TrustServerCertificate=True;`
 
-## How to use
+### 3) Restore and migrate
 
-- **Swagger:** `/swagger` – Use Authorize with JWT (token only, no "Bearer " prefix).
-- **Auth**
-  - `POST /api/auth/Register` – body: `{ "email", "password", "roleId" }`
-  - `POST /api/auth/Login` – body: `{ "email", "password" }` → accessToken in body, refreshToken in cookie
-  - `POST /api/auth/refresh` – returns new access token (uses refresh token from cookie)
-  - `POST /api/auth/logout` – header `Authorization: Bearer <token>`
-  - `GET /api/auth/me` – returns `{ "id", "email", "roles" }`
-- **Roles:** first call `POST /api/Roles/CreateRole` with body `"User"` or `"Admin"`, then use the returned `roleId` in Register.
+```bash
+dotnet restore
+cd assessment-erionshahini-API
+dotnet ef database update --context ApplicationDbContext
+```
 
----
+### 4) Run API
 
-## Technology
+```bash
+cd assessment-erionshahini-API
+dotnet run
+```
 
-- **Language:** C#
-- **Framework:** .NET 8, ASP.NET Core Web API
-- **DB:** Entity Framework Core 8, SQL Server (Docker or local)
-- **Auth:** ASP.NET Core Identity (User/Role, Guid), JWT Bearer, refresh token in HttpOnly cookie
-- **API docs:** Swagger (Swashbuckle)
-- **Docker:** for API and/or SQL Server
-- **Structure:** Controller → Service → Repository; Entities/dbContext/Migrations under `Repository/`
+Swagger available at:
 
----
+- `https://localhost:7294/swagger` (port may vary)
+
+### 5) Run Blazor UI
+
+In another terminal:
+
+```bash
+cd assessment-erionshahini-Layout
+dotnet run
+```
+
+Open the UI URL shown in terminal (typically `https://localhost:7039`).
+
+## Main API endpoints
+
+- Auth:
+  - `POST /api/auth/Register`
+  - `POST /api/auth/Login`
+  - `POST /api/auth/refresh`
+  - `POST /api/auth/logout`
+  - `GET /api/auth/me`
+- Videos:
+  - `POST /api/Videos/Upload`
+  - `GET /api/Videos/GetMyVideos`
+  - `GET /api/Videos/GetById/{id}`
+  - `GET /api/Videos/Stream/{id}`
+- Annotations:
+  - `POST /api/Annotations/Create`
+  - `GET /api/Annotations/GetByVideo/{videoId}`
+  - `DELETE /api/Annotations/Delete/{id}`
+- Bookmarks:
+  - `POST /api/Bookmarks/Create`
+  - `GET /api/Bookmarks/GetByVideo/{videoId}`
+  - `DELETE /api/Bookmarks/Delete/{id}`
+- Admin (Admin role):
+  - `GET /api/Admin/GetVideos`
+  - `GET /api/Admin/GetAnnotations`
+  - `GET /api/Admin/GetBookmarks`
 
 ## Assumptions and limitations
 
-- DB: SQL Server only (connection string in appsettings).
-- Auth and roles are done; video/annotations/bookmarks and admin view will be added in later commits.
-- Docker is used to run the API and the database (SQL Server) when working with containers.
+- Database engine is SQL Server.
+- Role creation/management is API-based; register defaults to `User` role if role id is not provided.
+- Stream endpoint is currently anonymous at API level; Blazor app uses a short-lived proxy token for in-app watch route.
+- UI language is mixed Albanian/English in some labels.
 
----
+## Suggested next improvements
 
-*Assessment – Erion Shahini | Internship 2026*
+- Add pagination/filter/search in admin lists for large datasets.
+- Add stronger server-side video MIME validation and optional antivirus scanning.
+- Add automated tests (unit/integration) for auth and notes flows.

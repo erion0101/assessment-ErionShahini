@@ -3,18 +3,38 @@
         <Found Context="routeData">
             <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)">
                 <NotAuthorized>
-                    <PageTitle>Not authorized</PageTitle>
-                    <p role="alert">Not authorized. Please login.</p>
-                    <a href="/">Go to login</a>
+                    <PageTitle>Not authorized - Video Lab</PageTitle>
+                    <div class="vl-page">
+                        <div class="vl-card" style="padding: 2rem; text-align: center;">
+                            <p role="alert" style="margin-bottom: 1rem;">You need to sign in to view this page.</p>
+                            <a href="@GetLoginUrlWithReturn()" class="vl-btn vl-btn-primary">Go to login</a>
+                        </div>
+                    </div>
                 </NotAuthorized>
             </AuthorizeRouteView>
             <FocusOnNavigate RouteData="@routeData" Selector="h1" />
         </Found>
         <NotFound>
-            <PageTitle>Not found</PageTitle>
+            <PageTitle>Not found - Video Lab</PageTitle>
             <LayoutView Layout="@typeof(MainLayout)">
-                <p role="alert">Sorry, there's nothing at this address.</p>
+                <div class="vl-page">
+                    <div class="vl-card" style="padding: 2rem; text-align: center;">
+                        <p role="alert">Sorry, there's nothing at this address.</p>
+                        <a href="/user/index">Back to home</a>
+                    </div>
+                </div>
             </LayoutView>
         </NotFound>
     </Router>
 </CascadingAuthenticationState>
+
+@code {
+    [Inject] private NavigationManager Navigation { get; set; } = null!;
+
+    private string GetLoginUrlWithReturn()
+    {
+        var path = "/" + Navigation.ToBaseRelativePath(Navigation.Uri).TrimStart('/');
+        if (string.IsNullOrEmpty(path) || path == "/") return "/";
+        return "/?returnUrl=" + Uri.EscapeDataString(path);
+    }
+}

@@ -12,6 +12,5 @@ public class RegisterRequest
     [MinLength(6)]
     public string Password { get; set; } = string.Empty;
 
-    [Required]
-    public Guid RoleId { get; set; }
+    public Guid? RoleId { get; set; }
 }

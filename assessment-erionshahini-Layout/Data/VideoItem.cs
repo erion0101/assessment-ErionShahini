@@ -1,6 +1,6 @@
-namespace Services.DTOs;
+namespace assessment_erionshahini_Layout.Data;
 
-public class VideoResponse
+public class VideoItem
 {
     public Guid Id { get; set; }
     public string Title { get; set; } = string.Empty;

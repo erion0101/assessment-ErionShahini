@@ -84,6 +84,9 @@ public class VideoService : IVideoService
 
     private static VideoResponse ToResponse(Video v)
     {
+        var uploaderEmail = v.User?.Email;
+        var uploaderName = BuildDisplayNameFromEmail(uploaderEmail);
+
         return new VideoResponse
         {
             Id = v.Id,
@@ -91,8 +94,30 @@ public class VideoService : IVideoService
             ContentType = v.ContentType,
             FileSizeBytes = v.FileSizeBytes,
             UserId = v.UserId,
+            UploaderName = uploaderName,
+            UploaderEmail = uploaderEmail,
             UploadedAt = v.UploadedAt,
             StreamUrl = $"/api/Videos/Stream/{v.Id}"
         };
+    }
+
+    private static string BuildDisplayNameFromEmail(string? email)
+    {
+        if (string.IsNullOrWhiteSpace(email))
+            return "Unknown user";
+
+        var localPart = email.Split('@')[0];
+        if (string.IsNullOrWhiteSpace(localPart))
+            return email;
+
+        var parts = localPart
+            .Replace('_', ' ')
+            .Replace('.', ' ')
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+        if (parts.Length == 0)
+            return email;
+
+        return string.Join(" ", parts.Select(p => char.ToUpperInvariant(p[0]) + p[1..]));
     }
 }

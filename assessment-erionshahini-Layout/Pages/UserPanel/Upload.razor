@@ -1,0 +1,170 @@
+@page "/user/upload"
+@attribute [Authorize]
+@using assessment_erionshahini_Layout.Data
+@using assessment_erionshahini_Layout.Service
+@using Microsoft.AspNetCore.Components.Forms
+
+<PageTitle>Upload Video - Video Lab</PageTitle>
+
+<div class="vl-page">
+    <div class="vl-upload-header">
+        <a href="/user/index" class="vl-back">← My Videos</a>
+        <h1>Upload Video</h1>
+        <p class="vl-text-muted">Ngarko një video (deri 500 MB). Më pas mund ta shikosh, të shtosh annotime dhe bookmark.</p>
+    </div>
+
+    @if (successVideo != null)
+    {
+        <div class="vl-alert vl-alert-success" role="alert">
+            <strong>Videoja u ngarkua.</strong>
+            <a href="/user/watch/@successVideo.Id">Shiko videon</a> ose <a href="/user/index">kthehu te lista</a>.
+        </div>
+    }
+    else if (error != null)
+    {
+        <div class="vl-alert vl-alert-error" role="alert">@error</div>
+    }
+
+    <div class="vl-card vl-upload-card">
+        <EditForm Model="model" OnValidSubmit="@(async () => await HandleSubmit())" FormName="UploadVideoForm">
+            <DataAnnotationsValidator />
+            <ValidationSummary class="vl-validation-summary" />
+
+            <div class="vl-field">
+                <label class="vl-label" for="title">Titulli i videos</label>
+                <InputText id="title" @bind-Value="model.Title" class="vl-input" placeholder="p.sh. Prezantimi im" maxlength="200" />
+            </div>
+
+            <div class="vl-field">
+                <label class="vl-label">Skedari video</label>
+                <InputFile id="file" OnChange="OnFileSelected" accept="video/*" class="vl-input-file" />
+                @if (selectedFile != null)
+                {
+                    <p class="vl-file-name">
+                        <span class="oi oi-document" aria-hidden="true"></span>
+                        @selectedFile.Name (@FormatFileSize(selectedFile.Size))
+                    </p>
+                }
+                else
+                {
+                    <p class="vl-file-hint">Zgjidh një skedar video (MP4, WebM, etj.)</p>
+                }
+                @if (fileError != null)
+                {
+                    <p class="vl-field-error">@fileError</p>
+                }
+            </div>
+
+            <div class="vl-upload-actions">
+                <button type="submit" class="vl-btn vl-btn-primary" disabled="@(isUploading || selectedFile == null)">
+                    @if (isUploading)
+                    {
+                        <span class="vl-spinner" aria-hidden="true"></span>
+                        <span>Duke ngarkuar…</span>
+                    }
+                    else
+                    {
+                        <span class="oi oi-cloud-upload" aria-hidden="true"></span>
+                        <span>Ngarko videon</span>
+                    }
+                </button>
+                <a href="/user/index" class="vl-btn vl-btn-secondary">Anulo</a>
+            </div>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    [Inject] private AuthenticatedApiClient Api { get; set; } = null!;
+    [Inject] private NavigationManager Navigation { get; set; } = null!;
+
+    private UploadModel model = new();
+    private IBrowserFile? selectedFile;
+    private string? fileError;
+    private string? error;
+    private VideoItem? successVideo;
+    private bool isUploading;
+
+    private void OnFileSelected(InputFileChangeEventArgs e)
+    {
+        fileError = null;
+        var file = e.File;
+        if (file.Size > 500_000_000)
+        {
+            fileError = "Skedari është më i madh se 500 MB.";
+            selectedFile = null;
+            return;
+        }
+        selectedFile = file;
+    }
+
+    private async Task HandleSubmit()
+    {
+        error = null;
+        successVideo = null;
+        if (selectedFile == null)
+        {
+            fileError = "Zgjidh një skedar video.";
+            return;
+        }
+        fileError = null;
+        isUploading = true;
+        try
+        {
+            successVideo = await Api.UploadVideoAsync(model.Title.Trim(), selectedFile);
+            model = new UploadModel();
+            selectedFile = null;
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            isUploading = false;
+        }
+    }
+
+    private static string FormatFileSize(long bytes)
+    {
+        if (bytes < 1024) return $"{bytes} B";
+        if (bytes < 1024 * 1024) return $"{bytes / 1024.0:F1} KB";
+        return $"{bytes / (1024.0 * 1024.0):F1} MB";
+    }
+
+    private class UploadModel
+    {
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Titulli është i detyrueshëm.")]
+        [System.ComponentModel.DataAnnotations.MaxLength(200)]
+        public string Title { get; set; } = string.Empty;
+    }
+}
+
+<style>
+    .vl-upload-header { margin-bottom: 1.5rem; }
+    .vl-back { display: inline-block; margin-bottom: 0.5rem; color: var(--vl-accent); font-weight: 500; }
+    .vl-back:hover { text-decoration: underline; }
+    .vl-upload-card { max-width: 520px; padding: 1.5rem; }
+    .vl-field { margin-bottom: 1.25rem; }
+    .vl-label { display: block; font-weight: 500; margin-bottom: 0.375rem; color: var(--vl-text); }
+    .vl-input { width: 100%; padding: 0.625rem 0.875rem; border: 1px solid var(--vl-border); border-radius: var(--vl-radius-sm); font-size: 1rem; }
+    .vl-input:focus { border-color: var(--vl-accent); outline: none; }
+    .vl-input-file { padding: 0.5rem 0; }
+    .vl-file-name, .vl-file-hint { margin-top: 0.5rem; font-size: 0.9375rem; color: var(--vl-text-muted); }
+    .vl-file-hint { font-style: italic; }
+    .vl-field-error { margin-top: 0.375rem; font-size: 0.875rem; color: var(--vl-danger, #dc2626); }
+    .vl-validation-summary { margin-bottom: 1rem; font-size: 0.875rem; color: var(--vl-danger, #dc2626); }
+    .vl-upload-actions { display: flex; gap: 0.75rem; margin-top: 1.5rem; flex-wrap: wrap; }
+    .vl-btn { padding: 0.625rem 1.25rem; font-weight: 600; border-radius: var(--vl-radius-sm); cursor: pointer; border: none; font-size: 1rem; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem; }
+    .vl-btn-primary { background: var(--vl-accent); color: white; }
+    .vl-btn-primary:hover:not(:disabled) { background: var(--vl-accent-hover); }
+    .vl-btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+    .vl-btn-secondary { background: var(--vl-border); color: var(--vl-text); }
+    .vl-btn-secondary:hover { background: #d1d5db; }
+    .vl-alert { padding: 0.75rem 1rem; border-radius: var(--vl-radius-sm); margin-bottom: 1rem; }
+    .vl-alert-success { background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; }
+    .vl-alert-success a { color: var(--vl-accent); font-weight: 500; }
+    .vl-alert-error { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; }
+    .vl-spinner { display: inline-block; width: 1rem; height: 1rem; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: vl-spin 0.7s linear infinite; }
+    @@keyframes vl-spin { to { transform: rotate(360deg); } }
+</style>

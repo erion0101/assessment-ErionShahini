@@ -1,19 +1,31 @@
-﻿@inherits LayoutComponentBase
+@inherits LayoutComponentBase
 
-<PageTitle>assessment-erionshahini-Layout</PageTitle>
+<PageTitle>Video Lab</PageTitle>
 
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
-
-    <main>
-        <div class="top-row px-4">
-            <a href="https://docs.microsoft.com/aspnet/" target="_blank">About</a>
+<div class="vl-app">
+    <header class="vl-header">
+        <div class="vl-header-inner">
+            <a href="/user/index" class="vl-logo" aria-label="Video Lab Home">
+                <span class="vl-logo-icon" aria-hidden="true">▶</span>
+                <span class="vl-logo-text">Video Lab</span>
+            </a>
+            <button class="vl-nav-toggle" type="button" aria-label="Toggle menu" @onclick="ToggleNav">
+                <span class="vl-nav-toggle-bar"></span>
+                <span class="vl-nav-toggle-bar"></span>
+                <span class="vl-nav-toggle-bar"></span>
+            </button>
+            <nav class="vl-nav @(navOpen ? "vl-nav-open" : null)">
+                <NavMenu />
+            </nav>
         </div>
-
-        <article class="content px-4">
-            @Body
-        </article>
+    </header>
+    <main class="vl-main">
+        @Body
     </main>
 </div>
+
+@code {
+    private bool navOpen;
+
+    private void ToggleNav() => navOpen = !navOpen;
+}

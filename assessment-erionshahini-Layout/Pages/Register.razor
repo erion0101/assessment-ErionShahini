@@ -1,0 +1,241 @@
+@page "/register"
+@layout EmptyLayout
+@using assessment_erionshahini_Layout.Service
+
+<PageTitle>Register - Video Lab</PageTitle>
+
+<div class="vl-login">
+    <div class="vl-login-card">
+        <div class="vl-login-brand">
+            <span class="vl-login-logo">▶</span>
+            <h1>Create account</h1>
+            <p class="vl-login-tagline">Start uploading and annotating videos.</p>
+        </div>
+
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="vl-alert vl-alert-error" role="alert">@errorMessage</div>
+        }
+
+        <EditForm Model="registerRequest" OnValidSubmit="HandleRegister">
+            <div class="vl-field">
+                <label class="vl-label" for="email">Email</label>
+                <InputText id="email" @bind-Value="registerRequest.Email" class="vl-input" placeholder="you@example.com" />
+            </div>
+            <div class="vl-field">
+                <label class="vl-label" for="password">Password</label>
+                <InputText id="password" type="password" @bind-Value="registerRequest.Password" class="vl-input" placeholder="At least 6 characters" />
+            </div>
+            <div class="vl-field">
+                <label class="vl-label" for="confirm">Confirm password</label>
+                <InputText id="confirm" type="password" @bind-Value="confirmPassword" class="vl-input" />
+            </div>
+            <button type="submit" class="vl-btn vl-btn-primary vl-btn-block" disabled="@isLoading">
+                @if (isLoading)
+                {
+                    <span>Creating account…</span>
+                }
+                else
+                {
+                    <span>Create account</span>
+                }
+            </button>
+        </EditForm>
+
+        <p class="vl-register-footnote">
+            Already have an account? <a href="/">Sign in</a>
+        </p>
+    </div>
+</div>
+
+@code {
+    [Inject] private IJSRuntime JS { get; set; } = null!;
+    [Inject] private IConfiguration Configuration { get; set; } = null!;
+    [Inject] private TokenStorageService TokenStorage { get; set; } = null!;
+    [Inject] private NavigationManager Navigation { get; set; } = null!;
+    [Inject] private AuthenticationStateProvider AuthenticationStateProvider { get; set; } = null!;
+
+    private RegisterForm registerRequest = new();
+    private string confirmPassword = string.Empty;
+    private string? errorMessage;
+    private bool isLoading;
+
+    private async Task HandleRegister()
+    {
+        errorMessage = null;
+
+        if (string.IsNullOrWhiteSpace(registerRequest.Email) || string.IsNullOrWhiteSpace(registerRequest.Password))
+        {
+            errorMessage = "Email dhe password janë të detyrueshme.";
+            return;
+        }
+        if (registerRequest.Password.Length < 6)
+        {
+            errorMessage = "Password duhet të ketë të paktën 6 karaktere.";
+            return;
+        }
+        if (!string.Equals(registerRequest.Password, confirmPassword, StringComparison.Ordinal))
+        {
+            errorMessage = "Password-et nuk përputhen.";
+            return;
+        }
+
+        isLoading = true;
+        try
+        {
+            var apiBaseUrl = Configuration["ApiSettings:BaseUrl"] ?? "";
+            var result = await JS.InvokeAsync<AuthJsResult>("registerFromBrowser", apiBaseUrl, registerRequest.Email, registerRequest.Password);
+            if (!result.Success || string.IsNullOrEmpty(result.AccessToken))
+            {
+                errorMessage = result.Message ?? "Register failed.";
+                return;
+            }
+
+            TokenStorage.SetAccessToken(result.AccessToken);
+            if (AuthenticationStateProvider is JwtAuthenticationStateProvider jwtAuthProvider)
+                jwtAuthProvider.NotifyUserAuthentication();
+            Navigation.NavigateTo("/user/index", forceLoad: false);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private class AuthJsResult
+    {
+        public bool Success { get; set; }
+        public string? AccessToken { get; set; }
+        public string? Message { get; set; }
+    }
+
+    private class RegisterForm
+    {
+        public string Email { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+    }
+}
+
+<style>
+    .vl-login {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(160deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+        padding: 1.5rem;
+    }
+
+    .vl-login-card {
+        background: var(--vl-card);
+        border-radius: var(--vl-radius);
+        padding: 2.2rem;
+        width: 100%;
+        max-width: 420px;
+        box-shadow: var(--vl-shadow-lg);
+    }
+
+    .vl-login-brand {
+        text-align: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .vl-login-logo {
+        width: 3rem;
+        height: 3rem;
+        background: var(--vl-accent);
+        color: #0f172a;
+        border-radius: var(--vl-radius-sm);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .vl-login-tagline {
+        color: var(--vl-text-muted);
+        font-size: 0.92rem;
+        margin: 0.2rem 0 0 0;
+    }
+
+    .vl-field {
+        margin-bottom: 1rem;
+    }
+
+    .vl-label {
+        display: block;
+        font-weight: 500;
+        margin-bottom: 0.32rem;
+        color: var(--vl-text);
+    }
+
+    .vl-input {
+        width: 100%;
+        padding: 0.625rem 0.875rem;
+        border: 1px solid var(--vl-border);
+        border-radius: var(--vl-radius-sm);
+        font-size: 1rem;
+    }
+
+    .vl-input:focus {
+        border-color: var(--vl-accent);
+        outline: none;
+        box-shadow: 0 0 0 3px var(--vl-accent-muted);
+    }
+
+    .vl-btn {
+        padding: 0.625rem 1.25rem;
+        font-weight: 600;
+        border-radius: var(--vl-radius-sm);
+        cursor: pointer;
+        border: none;
+        font-size: 1rem;
+    }
+
+    .vl-btn-primary {
+        background: var(--vl-accent);
+        color: white;
+    }
+
+    .vl-btn-primary:hover:not(:disabled) {
+        background: var(--vl-accent-hover);
+    }
+
+    .vl-btn-primary:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
+    .vl-btn-block {
+        width: 100%;
+        margin-top: 0.35rem;
+    }
+
+    .vl-alert {
+        padding: 0.75rem 1rem;
+        border-radius: var(--vl-radius-sm);
+        margin-bottom: 1rem;
+    }
+
+    .vl-alert-error {
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        color: #991b1b;
+    }
+
+    .vl-register-footnote {
+        margin: 1rem 0 0 0;
+        text-align: center;
+        font-size: 0.9rem;
+    }
+
+    .vl-register-footnote a {
+        color: var(--vl-accent);
+        font-weight: 600;
+    }
+</style>

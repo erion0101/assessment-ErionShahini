@@ -46,6 +46,7 @@ builder.Services.AddCors(options =>
         policy.WithOrigins(origins)
             .AllowAnyMethod()
             .AllowAnyHeader()
+            .WithExposedHeaders("Accept-Ranges", "Content-Range", "Content-Length")
             .AllowCredentials();
     });
 });
