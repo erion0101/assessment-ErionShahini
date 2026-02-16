@@ -82,6 +82,21 @@ public class VideoService : IVideoService
         return list.Select(ToResponse).ToList();
     }
 
+    public async Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var video = await _videoRepository.GetByIdAsync(id, cancellationToken);
+        if (video == null) return false;
+
+        var fullPath = Path.Combine(_env.ContentRootPath, video.FilePath);
+        if (System.IO.File.Exists(fullPath))
+        {
+            try { System.IO.File.Delete(fullPath); } catch { /* best effort */ }
+        }
+
+        await _videoRepository.DeleteAsync(video, cancellationToken);
+        return true;
+    }
+
     private static VideoResponse ToResponse(Video v)
     {
         var uploaderEmail = v.User?.Email;

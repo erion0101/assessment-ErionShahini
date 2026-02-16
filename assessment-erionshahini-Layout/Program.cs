@@ -13,7 +13,7 @@ builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor()
     .AddHubOptions(options =>
     {
-        // Lejon upload video deri ~500 MB (përndryshe SignalR kufizon në ~32 KB dhe videoja nuk ngarkohet)
+        // Allows video uploads up to ~500 MB (otherwise SignalR limits to ~32 KB and upload fails)
         options.MaximumReceiveMessageSize = 500 * 1024 * 1024; // 500 MB
     });
 builder.Services.AddSingleton<WeatherForecastService>();

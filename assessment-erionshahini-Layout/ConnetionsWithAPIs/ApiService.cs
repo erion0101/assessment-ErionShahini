@@ -22,7 +22,7 @@ namespace assessment_erionshahini_Layout.ConnetionsWithAPIs
                 {
                     var errorMessage = await response.Content.ReadAsStringAsync();
                     Console.WriteLine($"DELETE Error Response: {errorMessage}");
-                    throw new HttpRequestException($"Kërkesa dështoi me statusin {response.StatusCode}. Përgjigja e API-së: {errorMessage}");
+                    throw new HttpRequestException($"Request failed with status {response.StatusCode}. API response: {errorMessage}");
                 }
 
                 // Log success for debugging
@@ -39,7 +39,7 @@ namespace assessment_erionshahini_Layout.ConnetionsWithAPIs
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Gabim në kërkesën HTTP DELETE: {ex.Message}");
+                Console.WriteLine($"Error in HTTP DELETE request: {ex.Message}");
                 Console.WriteLine($"StackTrace: {ex.StackTrace}");
                 throw;
             }
@@ -70,12 +70,12 @@ namespace assessment_erionshahini_Layout.ConnetionsWithAPIs
                 else
                 {
                     var errorMessage = await response.Content.ReadAsStringAsync();
-                    throw new HttpRequestException($"Kërkesa dështoi me statusin {response.StatusCode}. Përgjigja e API-së: {errorMessage}");
+                    throw new HttpRequestException($"Request failed with status {response.StatusCode}. API response: {errorMessage}");
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Gabim në kërkesën HTTP GET: {ex.Message}");
+                Console.WriteLine($"Error in HTTP GET request: {ex.Message}");
                 throw;
             }
         }
@@ -99,12 +99,12 @@ namespace assessment_erionshahini_Layout.ConnetionsWithAPIs
                 else
                 {
                     var errorMessage = await response.Content.ReadAsStringAsync();
-                    throw new HttpRequestException($"Kërkesa dështoi me statusin {response.StatusCode}. Përgjigja e API-së: {errorMessage}");
+                    throw new HttpRequestException($"Request failed with status {response.StatusCode}. API response: {errorMessage}");
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Gabim në kërkesën HTTP POST: {ex.Message}");
+                Console.WriteLine($"Error in HTTP POST request: {ex.Message}");
                 throw;
             }
         }
@@ -134,12 +134,12 @@ namespace assessment_erionshahini_Layout.ConnetionsWithAPIs
                 else
                 {
                     var errorMessage = await response.Content.ReadAsStringAsync();
-                    throw new HttpRequestException($"Kërkesa dështoi me statusin {response.StatusCode}. Përgjigja e API-së: {errorMessage}");
+                    throw new HttpRequestException($"Request failed with status {response.StatusCode}. API response: {errorMessage}");
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Gabim në kërkesën HTTP PUT: {ex.Message}");
+                Console.WriteLine($"Error in HTTP PUT request: {ex.Message}");
                 throw;
             }
         }

@@ -66,17 +66,17 @@
 
         if (string.IsNullOrWhiteSpace(registerRequest.Email) || string.IsNullOrWhiteSpace(registerRequest.Password))
         {
-            errorMessage = "Email dhe password janë të detyrueshme.";
+            errorMessage = "Email and password are required.";
             return;
         }
         if (registerRequest.Password.Length < 6)
         {
-            errorMessage = "Password duhet të ketë të paktën 6 karaktere.";
+            errorMessage = "Password must be at least 6 characters.";
             return;
         }
         if (!string.Equals(registerRequest.Password, confirmPassword, StringComparison.Ordinal))
         {
-            errorMessage = "Password-et nuk përputhen.";
+            errorMessage = "Passwords do not match.";
             return;
         }
 

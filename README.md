@@ -1,43 +1,70 @@
 # assessment-erionshahini
 
-Internship Assessment 2026 - Video Lab (API + Blazor Server UI).
+Internship Assessment 2026 - Video Lab application (ASP.NET Core API + Blazor Server UI).
 
-This project allows authenticated users to upload/watch videos, create annotations and bookmarks with timestamps, and use an admin view for global data.
+## Overview
 
-## Current status
+This project allows authenticated users to:
 
-- [x] Authentication: Register, Login, Logout, Refresh token, `GET /api/auth/me`
-- [x] Authorization: JWT + role-based access (`User`, `Admin`)
-- [x] Video flow: Upload, My Videos, Watch (stream + seek support)
-- [x] Annotations: create/list/delete by video and user
-- [x] Bookmarks: create/list/delete by video and user
-- [x] Bookmark click seek to timestamp (frontend)
-- [x] Annotation playback visibility/highlight while video plays (frontend)
-- [x] Admin API: all videos/annotations/bookmarks
-- [x] Admin UI page connected to API (counts + lists)
+- Register and sign in
+- Upload videos
+- Watch videos inside the application
+- Create annotations (timestamp + description)
+- Create bookmarks (timestamp + title)
+- Jump to saved timestamps from annotations/bookmarks
 
-## Tech stack
+Admin users can access global overview pages for videos, annotations, and bookmarks.
 
-- Backend: ASP.NET Core Web API (.NET 8), EF Core, SQL Server, ASP.NET Identity, JWT
+## Architecture
+
+- `assessment-erionshahini-API`: .NET 8 Web API, EF Core, SQL Server, Identity, JWT
+- `assessment-erionshahini-Layout`: Blazor Server (.NET 7) UI
+- Auth model:
+  - Access token kept in memory on the Blazor side
+  - Refresh token kept in DB and managed via HttpOnly cookie on API side
+- Video streaming model:
+  - Blazor serves `/stream/{id}?t=...` as a same-origin proxy (short-lived token in cache; token is issued when an authenticated user loads the Watch page)
+  - Proxy forwards `Range` requests and partial content headers for seek support
+  - **Limitation**: API endpoint `GET /api/Videos/Stream/{id}` is currently `[AllowAnonymous]`; direct use of that URL (without going through the Blazor proxy) is not restricted. Securing it (e.g. signed stream token or proxy sending Bearer) is a recommended improvement.
+
+## Tech Stack
+
+- Backend: ASP.NET Core Web API (.NET 8)
 - Frontend: Blazor Server (.NET 7)
-- Docs/testing: Swagger
-- Optional: Docker (API and SQL Server)
+- Database: SQL Server + EF Core
+- Auth: ASP.NET Identity + JWT
+- API docs: Swagger/OpenAPI
+- Optional infrastructure: Docker
 
-## How to run
+## Requirement Mapping (Assessment Checklist)
+
+- [x] User account creation and login
+- [x] Only authenticated users can upload/add annotations/add bookmarks
+- [x] Annotations include timestamp + description
+- [x] Bookmarks include timestamp + title
+- [x] Clicking bookmark/annotation seeks to saved timestamp
+- [x] Annotation visibility while playback reaches related timestamp (overlay on video for 5s at matching time; Plyr player with markers on progress bar)
+- [x] Admin view for all videos/annotations/bookmarks
+- [x] Role-based access (`User`, `Admin`)
+
+## How to Run
 
 ### 1) Prerequisites
 
-- .NET SDK installed (8 for API, 7+ for Blazor project)
-- SQL Server (local or Docker)
+- .NET SDK 8 (API) and .NET SDK 7+ (Blazor project)
+- SQL Server instance (local or Docker)
 
-### 2) Configure database connection
+### 2) Configuration
 
-In `assessment-erionshahini-API/appsettings.json`, set:
+In `assessment-erionshahini-API/appsettings.json`, configure:
 
 - `ConnectionStrings:DefaultConnection`
-- `JwtSettings:Secret`, `JwtSettings:Issuer`, `JwtSettings:Audience`
+- `JwtSettings:Secret`
+- `JwtSettings:Issuer`
+- `JwtSettings:Audience`
+- Optional CORS origins if needed
 
-Example local connection:
+Example connection string:
 
 `Server=localhost;Database=AssessmentErionShahiniDB;Trusted_Connection=True;TrustServerCertificate=True;`
 
@@ -56,22 +83,18 @@ cd assessment-erionshahini-API
 dotnet run
 ```
 
-Swagger available at:
-
-- `https://localhost:7294/swagger` (port may vary)
+Swagger: `https://localhost:7294/swagger` (port may vary)
 
 ### 5) Run Blazor UI
-
-In another terminal:
 
 ```bash
 cd assessment-erionshahini-Layout
 dotnet run
 ```
 
-Open the UI URL shown in terminal (typically `https://localhost:7039`).
+UI URL is typically `https://localhost:7039`.
 
-## Main API endpoints
+## Main Endpoints
 
 - Auth:
   - `POST /api/auth/Register`
@@ -83,7 +106,8 @@ Open the UI URL shown in terminal (typically `https://localhost:7039`).
   - `POST /api/Videos/Upload`
   - `GET /api/Videos/GetMyVideos`
   - `GET /api/Videos/GetById/{id}`
-  - `GET /api/Videos/Stream/{id}`
+- `GET /api/Videos/Stream/{id}` (served via short-lived Blazor proxy token in-app)
+  - `DELETE /api/Videos/{id}` (owner/admin)
 - Annotations:
   - `POST /api/Annotations/Create`
   - `GET /api/Annotations/GetByVideo/{videoId}`
@@ -92,20 +116,60 @@ Open the UI URL shown in terminal (typically `https://localhost:7039`).
   - `POST /api/Bookmarks/Create`
   - `GET /api/Bookmarks/GetByVideo/{videoId}`
   - `DELETE /api/Bookmarks/Delete/{id}`
-- Admin (Admin role):
+- Admin:
   - `GET /api/Admin/GetVideos`
   - `GET /api/Admin/GetAnnotations`
   - `GET /api/Admin/GetBookmarks`
 
-## Assumptions and limitations
+## Manual Test Plan
+
+1. Register and login as a user.
+2. Upload a video and open it in `/user/watch/{id}`.
+3. Add one annotation and one bookmark using `Now`.
+4. Click saved timestamps and verify seek works.
+5. Confirm annotation overlay appears during playback at the saved timestamp.
+6. Logout and verify protected pages redirect/deny access.
+7. Login as admin and verify admin pages list all videos/annotations/bookmarks.
+8. Try direct API stream URL without auth: currently it is **not** blocked (API has `AllowAnonymous` on Stream); only the Blazor proxy route is protected by the token. See "Limitation" in Architecture.
+
+## Assumptions, Shortcuts, and Limitations
 
 - Database engine is SQL Server.
-- Role creation/management is API-based; register defaults to `User` role if role id is not provided.
-- Stream endpoint is currently anonymous at API level; Blazor app uses a short-lived proxy token for in-app watch route.
-- UI language is mixed Albanian/English in some labels.
+- Role creation/management is API-based (register defaults to `User` when role not specified).
+- Blazor Server + cookie auth requires careful browser/server flow handling; current implementation follows project constraints.
+- No full automated test suite included yet (manual validation checklist provided).
+- UI is intentionally lightweight but focused on assessment requirements and behavior clarity.
 
-## Suggested next improvements
+## Development Process (No History Rewrite)
 
-- Add pagination/filter/search in admin lists for large datasets.
-- Add stronger server-side video MIME validation and optional antivirus scanning.
-- Add automated tests (unit/integration) for auth and notes flows.
+- Existing commit history is preserved as-is (no rewrite/amend of old public history).
+- From this stage onward, changes are organized in small, meaningful commits (security, UX, docs).
+- Final phase focused on:
+  - stream authorization hardening,
+  - watch UX improvements (annotation overlay),
+  - README accuracy and assessment clarity.
+
+## Demo Assets (optional)
+
+Before submission you can add 4–6 screenshots or short GIFs, for example:
+
+- Login / Register
+- Upload
+- Watch page with seek and annotation overlay
+- Annotation active at timestamp
+- Admin view (videos / annotations / bookmarks)
+
+Place them in a `docs/screenshots` folder or link them in this section.
+
+## Final Submission Checklist
+
+A one-page **copy-paste checklist** is in [SUBMISSION_CHECKLIST.md](./SUBMISSION_CHECKLIST.md). Use it before sending the repo link to verify security, functionality, README, and commits.
+
+## Suggested Next Improvements
+
+- Add edit/update support for annotations and bookmarks.
+- Add automated tests (service + controller integration tests).
+- Add rate limiting and stronger input/file validation.
+- Add CI workflow for build/lint/tests on push.
+
+

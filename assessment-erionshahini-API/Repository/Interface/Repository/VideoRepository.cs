@@ -44,4 +44,10 @@ public class VideoRepository : IVideoRepository
             .OrderByDescending(v => v.UploadedAt)
             .ToListAsync(cancellationToken);
     }
+
+    public async Task DeleteAsync(Video video, CancellationToken cancellationToken = default)
+    {
+        _context.Videos.Remove(video);
+        await _context.SaveChangesAsync(cancellationToken);
+    }
 }

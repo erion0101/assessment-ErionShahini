@@ -22,37 +22,35 @@
     {
         @if (!string.IsNullOrEmpty(streamUrl))
         {
+            <div class="vl-watch-actions">
+                <a href="/user/index" class="vl-watch-back-link">← My Videos</a>
+                <button type="button" class="vl-btn vl-btn-danger vl-watch-delete-btn" disabled="@_deleting" @onclick="ConfirmAndDeleteVideoAsync" title="Delete this video permanently">
+                    @(_deleting ? "Deleting…" : "Delete video")
+                </button>
+            </div>
             <div class="vl-watch-shell">
-                <div class="vl-video-wrap" id="vl-watch-player-wrap" @key="streamUrl">
-                    <video id="vl-watch-video" @ref="_videoRef" controls preload="auto" class="vl-video-player" src="@streamUrl">
+                <div class="vl-video-wrap vl-video-wrap-plyr" id="vl-watch-player-wrap" @key="streamUrl">
+                    <video id="vl-watch-video" @ref="_videoRef" preload="auto" class="vl-video-player" src="@streamUrl">
                         Your browser does not support the video tag.
                     </video>
                 </div>
             </div>
             <p class="vl-watch-fallback">
-                <a href="@streamUrl" target="_blank" rel="noopener">Hape videon në tab të ri</a> nëse nuk luhet më sipër.
+                <a href="@streamUrl" target="_blank" rel="noopener">Open video in new tab</a> if it does not play above.
                 @if (_pipSupported == true)
                 {
                     <span class="vl-watch-fallback-sep">•</span>
-                    <button type="button" class="vl-pip-btn" @onclick="TogglePiPAsync">@(_isInPiP ? "Mbyll PiP" : "Hape në PiP")</button>
+                    <button type="button" class="vl-pip-btn" @onclick="TogglePiPAsync">@(_isInPiP ? "Close PiP" : "Open in PiP")</button>
                 }
                 else if (_pipSupported == false)
                 {
                     <span class="vl-watch-fallback-sep">•</span>
-                    <span class="vl-pip-unsupported">PiP nuk mbështetet nga ky browser.</span>
+                    <span class="vl-pip-unsupported">PiP is not supported by this browser.</span>
                 }
             </p>
-            @if (_activeAnnotationId.HasValue && !string.IsNullOrWhiteSpace(_activeAnnotationText))
-            {
-                <div class="vl-active-annotation" role="status" aria-live="polite">
-                    <span class="vl-active-annotation-time">@FormatTime(_activeAnnotationTime)</span>
-                    <span class="vl-active-annotation-text">@_activeAnnotationText</span>
-                </div>
-            }
-
             <div class="vl-notes-layout">
                 <div class="vl-watch-notes-intro">
-                    <p class="vl-watch-notes-intro-text">Kliko mbi kohën (min:sek) që të kalosh drejt asaj pike në video.</p>
+                    <p class="vl-watch-notes-intro-text">Click a timestamp (min:sec) to jump to that point in the video.</p>
                     @if (_taniMessage != null)
                     {
                         <p class="vl-tani-message" role="alert">@_taniMessage</p>
@@ -63,12 +61,12 @@
                             @if (annotations.Count > 0)
                             {
                                 <div class="vl-preview-group">
-                                    <p class="vl-preview-group-title">Annotime</p>
+                                    <p class="vl-preview-group-title">Annotations</p>
                                     <ul class="vl-preview-list">
                                         @foreach (var a in annotations.Take(4))
                                         {
                                             <li class="vl-preview-item">
-                                                <button type="button" class="vl-preview-time vl-seek-btn" data-seek="@a.TimestampSeconds.ToString(System.Globalization.CultureInfo.InvariantCulture)" title="Kalo në këtë moment">@FormatTime(a.TimestampSeconds)</button>
+                                                <button type="button" class="vl-preview-time vl-seek-btn" data-kind="annotation" data-seek="@a.TimestampSeconds.ToString(System.Globalization.CultureInfo.InvariantCulture)" title="Jump to this moment">@FormatTime(a.TimestampSeconds)</button>
                                                 <span class="vl-preview-text">@a.Description</span>
                                             </li>
                                         }
@@ -78,12 +76,12 @@
                             @if (bookmarks.Count > 0)
                             {
                                 <div class="vl-preview-group">
-                                    <p class="vl-preview-group-title">Bookmark</p>
+                                    <p class="vl-preview-group-title">Bookmarks</p>
                                     <ul class="vl-preview-list">
                                         @foreach (var b in bookmarks.Take(4))
                                         {
                                             <li class="vl-preview-item">
-                                                <button type="button" class="vl-preview-time vl-seek-btn" data-seek="@b.TimestampSeconds.ToString(System.Globalization.CultureInfo.InvariantCulture)" title="Kalo në këtë moment">@FormatTime(b.TimestampSeconds)</button>
+                                                <button type="button" class="vl-preview-time vl-seek-btn" data-kind="bookmark" data-seek="@b.TimestampSeconds.ToString(System.Globalization.CultureInfo.InvariantCulture)" title="Jump to this moment">@FormatTime(b.TimestampSeconds)</button>
                                                 <span class="vl-preview-text">@b.Title</span>
                                             </li>
                                         }
@@ -97,23 +95,23 @@
                 <div class="vl-watch-notes">
                 <section class="vl-notes-section">
                     <div class="vl-section-heading">
-                        <h2 class="vl-notes-section-title">📝 Annotime</h2>
+                        <h2 class="vl-notes-section-title">📝 Annotations</h2>
                         @if (annotations.Count > 0)
                         {
                             <span class="vl-count-badge">@annotations.Count</span>
                         }
                     </div>
-                    <p class="vl-notes-section-desc">Shënime në një moment të videos. Kliko mbi kohën → kalon në atë moment.</p>
+                    <p class="vl-notes-section-desc">Notes attached to a specific moment in the video. Click a timestamp to jump there.</p>
                     <div class="vl-add-form">
-                        <input @bind="_newAnnotationDesc" placeholder="Përshkrimi" class="vl-input vl-input-sm" />
-                        <span class="vl-time-label">Koha (sek):</span>
+                        <input @bind="_newAnnotationDesc" placeholder="Description" class="vl-input vl-input-sm" />
+                        <span class="vl-time-label">Time (sec):</span>
                         <input type="number" step="0.1" min="0" @bind="_newAnnotationTime" class="vl-input vl-input-num" />
-                        <button type="button" class="vl-btn vl-btn-sm vl-btn-secondary" @onclick="UseCurrentTimeForAnnotation">Tani</button>
-                        <button type="button" class="vl-btn vl-btn-sm vl-btn-primary" disabled="@(string.IsNullOrWhiteSpace(_newAnnotationDesc))" @onclick="AddAnnotation">Shto</button>
+                        <button type="button" class="vl-btn vl-btn-sm vl-btn-secondary" @onclick="UseCurrentTimeForAnnotation">Now</button>
+                        <button type="button" class="vl-btn vl-btn-sm vl-btn-primary" disabled="@(string.IsNullOrWhiteSpace(_newAnnotationDesc))" @onclick="AddAnnotation">Add</button>
                     </div>
                     @if (annotations.Count == 0)
                     {
-                        <p class="vl-empty-notes">Ende nuk ka annotime.</p>
+                        <p class="vl-empty-notes">No annotations yet.</p>
                     }
                     else
                     {
@@ -123,9 +121,9 @@
                                 var annTime = a.TimestampSeconds;
                                 var annId = a.Id;
                                 <li class="vl-note-item @(annId == _activeAnnotationId ? "is-active" : "")">
-                                    <button type="button" class="vl-note-time vl-seek-btn" data-seek="@annTime.ToString(System.Globalization.CultureInfo.InvariantCulture)" title="Kalo në këtë moment në video">@FormatTime(annTime)</button>
+                                    <button type="button" class="vl-note-time vl-seek-btn" data-kind="annotation" data-seek="@annTime.ToString(System.Globalization.CultureInfo.InvariantCulture)" title="Jump to this moment in the video">@FormatTime(annTime)</button>
                                     <span class="vl-note-text">@a.Description</span>
-                                    <button type="button" class="vl-btn vl-btn-sm vl-btn-ghost" aria-label="Fshi" @onclick="@(() => DeleteAnnotation(annId))">✕</button>
+                                    <button type="button" class="vl-btn vl-btn-sm vl-btn-ghost" aria-label="Delete" @onclick="@(() => DeleteAnnotation(annId))">✕</button>
                                 </li>
                             }
                         </ul>
@@ -134,23 +132,23 @@
 
                 <section class="vl-notes-section">
                     <div class="vl-section-heading">
-                        <h2 class="vl-notes-section-title">🔖 Bookmark</h2>
+                        <h2 class="vl-notes-section-title">🔖 Bookmarks</h2>
                         @if (bookmarks.Count > 0)
                         {
                             <span class="vl-count-badge">@bookmarks.Count</span>
                         }
                     </div>
-                    <p class="vl-notes-section-desc">Faqerojtës për të kthyer te një pjesë e videos. Kliko mbi kohën → kalon atje.</p>
+                    <p class="vl-notes-section-desc">Save points to quickly return to a part of the video. Click a timestamp to jump there.</p>
                     <div class="vl-add-form">
-                        <input @bind="_newBookmarkTitle" placeholder="Titulli" class="vl-input vl-input-sm" />
-                        <span class="vl-time-label">Koha (sek):</span>
+                        <input @bind="_newBookmarkTitle" placeholder="Title" class="vl-input vl-input-sm" />
+                        <span class="vl-time-label">Time (sec):</span>
                         <input type="number" step="0.1" min="0" @bind="_newBookmarkTime" class="vl-input vl-input-num" />
-                        <button type="button" class="vl-btn vl-btn-sm vl-btn-secondary" @onclick="UseCurrentTimeForBookmark">Tani</button>
-                        <button type="button" class="vl-btn vl-btn-sm vl-btn-primary" disabled="@(string.IsNullOrWhiteSpace(_newBookmarkTitle))" @onclick="AddBookmark">Shto</button>
+                        <button type="button" class="vl-btn vl-btn-sm vl-btn-secondary" @onclick="UseCurrentTimeForBookmark">Now</button>
+                        <button type="button" class="vl-btn vl-btn-sm vl-btn-primary" disabled="@(string.IsNullOrWhiteSpace(_newBookmarkTitle))" @onclick="AddBookmark">Add</button>
                     </div>
                     @if (bookmarks.Count == 0)
                     {
-                        <p class="vl-empty-notes">Ende nuk ka bookmark.</p>
+                        <p class="vl-empty-notes">No bookmarks yet.</p>
                     }
                     else
                     {
@@ -160,9 +158,9 @@
                                 var bookTime = b.TimestampSeconds;
                                 var bookId = b.Id;
                                 <li class="vl-note-item">
-                                    <button type="button" class="vl-note-time vl-seek-btn" data-seek="@bookTime.ToString(System.Globalization.CultureInfo.InvariantCulture)" title="Kalo në këtë moment në video">@FormatTime(bookTime)</button>
+                                    <button type="button" class="vl-note-time vl-seek-btn" data-kind="bookmark" data-seek="@bookTime.ToString(System.Globalization.CultureInfo.InvariantCulture)" title="Jump to this moment in the video">@FormatTime(bookTime)</button>
                                     <span class="vl-note-text">@b.Title</span>
-                                    <button type="button" class="vl-btn vl-btn-sm vl-btn-ghost" aria-label="Fshi" @onclick="@(() => DeleteBookmark(bookId))">✕</button>
+                                    <button type="button" class="vl-btn vl-btn-sm vl-btn-ghost" aria-label="Delete" @onclick="@(() => DeleteBookmark(bookId))">✕</button>
                                 </li>
                             }
                         </ul>
@@ -204,6 +202,8 @@
     private Guid? _activeAnnotationId;
     private string? _activeAnnotationText;
     private double _activeAnnotationTime;
+    private bool _deleting;
+    private bool _plyrInited;
 
     protected override async Task OnInitializedAsync()
     {
@@ -231,20 +231,52 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!firstRender || string.IsNullOrEmpty(streamUrl))
+        if (string.IsNullOrEmpty(streamUrl))
             return;
 
-        try
+        if (!_plyrInited)
         {
-            _pipSupported = await JS.InvokeAsync<bool>("videoLabCanPiP", "vl-watch-video");
-            _isInPiP = false;
-            _selfRef = DotNetObjectReference.Create(this);
-            await JS.InvokeVoidAsync("videoLabAttachTimeObserver", "vl-watch-video", _selfRef, nameof(OnVideoTimeUpdate), 250);
-            StateHasChanged();
+            try
+            {
+                _selfRef = DotNetObjectReference.Create(this);
+                var bookmarksSeconds = bookmarks.Select(b => b.TimestampSeconds).ToArray();
+                var annotationsData = annotations
+                    .Select(a => new { time = a.TimestampSeconds, text = a.Description ?? "" })
+                    .ToArray();
+
+                await JS.InvokeVoidAsync("videoPlayerInit", new
+                {
+                    containerId = "vl-watch-player-wrap",
+                    videoId = "vl-watch-video",
+                    src = streamUrl,
+                    bookmarks = bookmarksSeconds,
+                    annotations = annotationsData,
+                    dotNetRef = _selfRef,
+                    timeUpdateCallback = nameof(OnVideoTimeUpdate)
+                });
+                _plyrInited = true;
+
+                _pipSupported = await JS.InvokeAsync<bool>("videoLabCanPiP", "vl-watch-video");
+                _isInPiP = false;
+                StateHasChanged();
+            }
+            catch
+            {
+                _pipSupported = false;
+            }
         }
-        catch
+        else if (_plyrInited)
         {
-            _pipSupported = false;
+            try
+            {
+                var bookmarksSeconds = bookmarks.Select(b => b.TimestampSeconds).ToArray();
+                var annotationsData = annotations
+                    .Select(a => new { time = a.TimestampSeconds, text = a.Description ?? "" })
+                    .ToArray();
+                await JS.InvokeVoidAsync("videoPlayerUpdateMarkers", "vl-watch-video", bookmarksSeconds);
+                await JS.InvokeVoidAsync("videoPlayerUpdateAnnotations", "vl-watch-video", annotationsData);
+            }
+            catch { /* ignore */ }
         }
     }
 
@@ -252,7 +284,7 @@
     public Task OnVideoTimeUpdate(double currentTime)
     {
         var match = annotations
-            .Where(a => Math.Abs(a.TimestampSeconds - currentTime) <= 0.6d)
+            .Where(a => Math.Abs(a.TimestampSeconds - currentTime) <= 1.5d)
             .OrderBy(a => Math.Abs(a.TimestampSeconds - currentTime))
             .FirstOrDefault();
 
@@ -281,7 +313,7 @@
     {
         try
         {
-            await JS.InvokeVoidAsync("videoLabDetachTimeObserver", "vl-watch-video");
+            await JS.InvokeVoidAsync("videoPlayerDestroy", "vl-watch-video");
         }
         catch
         {
@@ -312,18 +344,18 @@
         _taniMessage = null;
         try
         {
-            var s = await JS.InvokeAsync<string>("videoLabGetCurrentTime", "vl-watch-video");
+            var s = await JS.InvokeAsync<string>("videoPlayerGetCurrentTime", "vl-watch-video");
             if (!double.TryParse(s, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var t))
                 t = 0;
             if (t == 0)
             {
                 await Task.Delay(150);
-                s = await JS.InvokeAsync<string>("videoLabGetCurrentTime", "vl-watch-video");
+                s = await JS.InvokeAsync<string>("videoPlayerGetCurrentTime", "vl-watch-video");
                 double.TryParse(s, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out t);
             }
             _newAnnotationTime = t;
             if (t == 0)
-                _taniMessage = "Videoja nuk u gjet; provo përsëri pasi të jetë duke u luajtur.";
+                _taniMessage = "Video was not found; try again after playback starts.";
             StateHasChanged();
         }
         catch { }
@@ -334,18 +366,18 @@
         _taniMessage = null;
         try
         {
-            var s = await JS.InvokeAsync<string>("videoLabGetCurrentTime", "vl-watch-video");
+            var s = await JS.InvokeAsync<string>("videoPlayerGetCurrentTime", "vl-watch-video");
             if (!double.TryParse(s, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var t))
                 t = 0;
             if (t == 0)
             {
                 await Task.Delay(150);
-                s = await JS.InvokeAsync<string>("videoLabGetCurrentTime", "vl-watch-video");
+                s = await JS.InvokeAsync<string>("videoPlayerGetCurrentTime", "vl-watch-video");
                 double.TryParse(s, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out t);
             }
             _newBookmarkTime = t;
             if (t == 0)
-                _taniMessage = "Videoja nuk u gjet; provo përsëri pasi të jetë duke u luajtur.";
+                _taniMessage = "Video was not found; try again after playback starts.";
             StateHasChanged();
         }
         catch { }
@@ -368,6 +400,28 @@
         catch
         {
             _isInPiP = false;
+        }
+    }
+
+    private async Task ConfirmAndDeleteVideoAsync()
+    {
+        var confirmed = await JS.InvokeAsync<bool>("confirm", "Are you sure you want to delete this video? This action cannot be undone.");
+        if (!confirmed) return;
+
+        _deleting = true;
+        error = null;
+        try
+        {
+            await Api.DeleteVideoAsync(Id);
+            Navigation.NavigateTo("/user/index", forceLoad: false);
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            _deleting = false;
         }
     }
 
@@ -449,6 +503,48 @@
 }
 
 <style>
+    .vl-watch-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin: 0 0 0.6rem 0;
+        flex-wrap: wrap;
+    }
+
+    .vl-watch-back-link {
+        color: var(--vl-accent);
+        font-size: 0.9rem;
+        text-decoration: none;
+    }
+
+    .vl-watch-back-link:hover {
+        text-decoration: underline;
+    }
+
+    .vl-watch-delete-btn {
+        margin-left: auto;
+    }
+
+    .vl-btn-danger {
+        background: var(--vl-danger, #dc2626);
+        color: #fff;
+        border: none;
+        padding: 0.4rem 0.85rem;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.875rem;
+        cursor: pointer;
+    }
+
+    .vl-btn-danger:hover:not(:disabled) {
+        background: #b91c1c;
+    }
+
+    .vl-btn-danger:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+    }
+
     .vl-watch-page {
         max-width: none;
         width: 100%;
@@ -468,9 +564,11 @@
         max-width: calc(100% - 100px);
         background: #000;
         border-radius: var(--vl-radius);
-        overflow: hidden;
         box-shadow: var(--vl-shadow-lg);
-        
+        position: relative;
+        overflow: visible;
+        z-index: 1;
+        isolation: isolate;
     }
 
     .vl-video-player {
@@ -479,6 +577,106 @@
         display: block;
         object-fit: contain;
         background: #000;
+    }
+
+    .vl-video-wrap-plyr .plyr {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        min-height: 0;
+        border-radius: var(--vl-radius);
+        overflow: hidden;
+        z-index: 0;
+    }
+
+    .vl-video-wrap-plyr .plyr__video-wrapper {
+        flex: 1 1 auto;
+        min-height: 0;
+    }
+
+    .vl-plyr-annotation-overlay {
+        position: absolute;
+        left: 50%;
+        top: 0.75rem;
+        transform: translateX(-50%);
+        display: inline-flex;
+        align-items: center;
+        gap: 0.55rem;
+        background: rgba(15, 23, 42, 0.92);
+        border: 1px solid rgba(34, 211, 238, 0.7);
+        color: #f8fafc;
+        border-radius: 12px;
+        padding: 0.52rem 0.82rem;
+        max-width: calc(100% - 2rem);
+        z-index: 2;
+        pointer-events: none;
+        backdrop-filter: blur(6px);
+        box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+    }
+
+    .vl-video-wrap-plyr .plyr--fullscreen .vl-plyr-annotation-overlay {
+        top: 1rem;
+        z-index: 2;
+    }
+
+    .vl-plyr-annotation-time {
+        background: rgba(6, 182, 212, 0.25);
+        color: #a5f3fc;
+        border-radius: 999px;
+        padding: 0.14rem 0.5rem;
+        font-size: 0.78rem;
+        font-weight: 800;
+        white-space: nowrap;
+    }
+
+    .vl-plyr-annotation-text {
+        font-size: 0.85rem;
+        font-weight: 600;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: min(560px, calc(100vw - 4rem));
+    }
+
+    .vl-plyr-markers {
+        position: absolute;
+        left: 0;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        pointer-events: none;
+        z-index: 2;
+    }
+
+    .vl-plyr-marker {
+        pointer-events: auto;
+        position: absolute;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        width: 10px;
+        height: 10px;
+        margin-left: 0;
+        padding: 0;
+        border: none;
+        border-radius: 50%;
+        background: #06b6d4;
+        cursor: pointer;
+        z-index: 3;
+        box-shadow: 0 0 0 2px rgba(255,255,255,0.8);
+    }
+
+    .vl-plyr-marker:hover {
+        background: #22d3ee;
+        transform: translate(-50%, -50%) scale(1.2);
+    }
+
+    .vl-video-wrap-plyr .plyr__progress {
+        position: relative;
+        overflow: visible;
+    }
+
+    .vl-video-wrap-plyr .plyr__controls {
+        z-index: 3;
     }
 
     .vl-watch-fallback {
@@ -492,22 +690,29 @@
 
     .vl-watch-fallback a { color: var(--vl-accent); }
 
-    .vl-active-annotation {
-        margin: 0 0 1rem 0;
+    .vl-active-annotation-overlay {
+        position: absolute;
+        left: 50%;
+        top: 0.75rem;
+        transform: translateX(-50%);
         display: inline-flex;
         align-items: center;
         gap: 0.55rem;
-        background: #ecfeff;
-        border: 1px solid #99f6e4;
-        color: #0f172a;
+        background: rgba(15, 23, 42, 0.92);
+        border: 1px solid rgba(34, 211, 238, 0.7);
+        color: #f8fafc;
         border-radius: 12px;
-        padding: 0.45rem 0.7rem;
-        max-width: min(900px, calc(100% - 100px));
+        padding: 0.52rem 0.82rem;
+        max-width: calc(100% - 2rem);
+        z-index: 8;
+        pointer-events: none;
+        backdrop-filter: blur(6px);
+        box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
     }
 
     .vl-active-annotation-time {
-        background: #cffafe;
-        color: #155e75;
+        background: rgba(6, 182, 212, 0.25);
+        color: #a5f3fc;
         border-radius: 999px;
         padding: 0.14rem 0.5rem;
         font-size: 0.78rem;
@@ -518,6 +723,10 @@
     .vl-active-annotation-text {
         font-size: 0.85rem;
         font-weight: 600;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: min(560px, calc(100vw - 4rem));
     }
 
     .vl-watch-fallback-sep {
@@ -781,9 +990,7 @@
             max-width: 100%;
         }
 
-        .vl-active-annotation {
-            max-width: 700px;
-        }
+        .vl-active-annotation-text { max-width: min(420px, calc(100vw - 4rem)); }
     }
 
     @@media (max-width: 860px) {
@@ -814,8 +1021,8 @@
             height: 320px;
         }
 
-        .vl-active-annotation {
-            max-width: 100%;
-        }
+        .vl-active-annotation-overlay { top: 0.5rem; max-width: calc(100% - 1rem); }
+
+        .vl-active-annotation-text { max-width: 100%; }
     }
 </style>

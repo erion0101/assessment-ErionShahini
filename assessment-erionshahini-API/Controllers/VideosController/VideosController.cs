@@ -73,7 +73,27 @@ public class VideosController : ControllerBase
         return PhysicalFile(fullPath, contentType ?? "application/octet-stream", enableRangeProcessing: true);
     }
 
-    /// <summary>E njëjta logjikë si api/auth/Me. Me MapInboundClaims=false claim është "sub".</summary>
+    /// <summary>Delete a video (and its file). Owner or admin.</summary>
+    [HttpDelete]
+    [Route("{id:guid}")]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
+    {
+        var callerId = GetCurrentUserId();
+        if (callerId == null) return Unauthorized();
+
+        var video = await _videoService.GetByIdAsync(id, cancellationToken);
+        if (video == null) return NotFound();
+
+        var isAdmin = User.IsInRole("Admin");
+        if (!isAdmin && video.UserId != callerId.Value)
+            return Forbid();
+
+        var deleted = await _videoService.DeleteAsync(id, cancellationToken);
+        if (!deleted) return NotFound();
+        return NoContent();
+    }
+
+    /// <summary>Same logic as api/auth/Me. With MapInboundClaims=false, the claim is "sub".</summary>
     private Guid? GetCurrentUserId()
     {
         var id = User.FindFirstValue("sub")

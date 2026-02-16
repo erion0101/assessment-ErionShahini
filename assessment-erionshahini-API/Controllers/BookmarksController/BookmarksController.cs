@@ -94,7 +94,7 @@ public class BookmarksController : ControllerBase
         return NoContent();
     }
 
-    /// <summary>E njëjta logjikë si api/auth/Me. Me MapInboundClaims=false claim është "sub".</summary>
+    /// <summary>Same logic as api/auth/Me. With MapInboundClaims=false, the claim is "sub".</summary>
     private Guid? GetCurrentUserId()
     {
         var id = User.FindFirstValue("sub")

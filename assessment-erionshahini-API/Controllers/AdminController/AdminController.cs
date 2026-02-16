@@ -25,7 +25,7 @@ public class AdminController : ControllerBase
         _bookmarkService = bookmarkService;
     }
 
-    /// <summary>Të gjitha videot (vetëm Admin).</summary>
+    /// <summary>All videos (Admin only).</summary>
     [HttpGet]
     [Route("[action]")]
     public async Task<IActionResult> GetVideos(CancellationToken cancellationToken)
@@ -34,7 +34,7 @@ public class AdminController : ControllerBase
         return Ok(list);
     }
 
-    /// <summary>Të gjitha shënimet (Annotations) – vetëm Admin.</summary>
+    /// <summary>All annotations (Admin only).</summary>
     [HttpGet]
     [Route("[action]")]
     public async Task<IActionResult> GetAnnotations(CancellationToken cancellationToken)
@@ -43,7 +43,7 @@ public class AdminController : ControllerBase
         return Ok(list);
     }
 
-    /// <summary>Të gjithë faqerojtësit (Bookmarks) – vetëm Admin.</summary>
+    /// <summary>All bookmarks (Admin only).</summary>
     [HttpGet]
     [Route("[action]")]
     public async Task<IActionResult> GetBookmarks(CancellationToken cancellationToken)

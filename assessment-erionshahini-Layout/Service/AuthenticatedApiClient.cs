@@ -198,6 +198,23 @@ public class AuthenticatedApiClient
         return JsonSerializer.Deserialize<VideoItem>(json, JsonOptions);
     }
 
+    public async Task DeleteVideoAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var token = _tokenStorage.GetAccessToken();
+        if (string.IsNullOrEmpty(token))
+            throw new InvalidOperationException("Not signed in. Please log in again.");
+
+        var client = _factory.CreateClient("VideoLabApi");
+        using var request = new HttpRequestMessage(HttpMethod.Delete, $"Videos/{id}");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        using var response = await client.SendAsync(request, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            var body = await response.Content.ReadAsStringAsync(cancellationToken);
+            throw new HttpRequestException($"Delete video failed: {response.StatusCode}. {body}");
+        }
+    }
+
     public async Task<List<VideoItem>?> GetAdminVideosAsync(CancellationToken cancellationToken = default)
     {
         var token = _tokenStorage.GetAccessToken();

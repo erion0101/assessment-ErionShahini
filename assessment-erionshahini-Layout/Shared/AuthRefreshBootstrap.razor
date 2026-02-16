@@ -1,0 +1,53 @@
+@using System.Text.Json.Serialization
+@using assessment_erionshahini_Layout.Service
+@using Microsoft.JSInterop
+@inject TokenStorageService TokenStorage
+@inject IJSRuntime JS
+@inject IConfiguration Config
+@inject JwtAuthenticationStateProvider AuthStateProvider
+@* Renders nothing; on first load without token, runs refresh from browser (credentials: include) so HttpOnly cookie is sent, then applies new access token. *@
+
+@code {
+    private bool _refreshAttempted;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || _refreshAttempted)
+            return;
+        if (TokenStorage.HasToken())
+            return;
+
+        var apiBaseUrl = Config["ApiSettings:BaseUrl"]?.TrimEnd('/') ?? "";
+        if (string.IsNullOrEmpty(apiBaseUrl))
+            return;
+
+        _refreshAttempted = true;
+
+        try
+        {
+            // Give the browser script time to run (refresh on page load stores result in __blazorRefreshResult).
+            await Task.Delay(600);
+            var result = await JS.InvokeAsync<RefreshResultDto?>("getBlazorRefreshResult");
+            if (result == null)
+                result = await JS.InvokeAsync<RefreshResultDto>("refreshTokenFromBrowser", apiBaseUrl);
+
+            if (result?.Success == true && !string.IsNullOrEmpty(result.AccessToken))
+            {
+                TokenStorage.SetAccessToken(result.AccessToken);
+                AuthStateProvider.NotifyUserAuthentication();
+            }
+        }
+        catch
+        {
+            // Silent: refresh failed (e.g. no cookie, prerender), user stays anonymous
+        }
+    }
+
+    private sealed class RefreshResultDto
+    {
+        [JsonPropertyName("success")]
+        public bool Success { get; set; }
+        [JsonPropertyName("accessToken")]
+        public string? AccessToken { get; set; }
+    }
+}

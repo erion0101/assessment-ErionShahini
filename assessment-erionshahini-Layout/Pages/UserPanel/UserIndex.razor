@@ -41,7 +41,7 @@
             @foreach (var v in videos)
             {
                 <div class="vl-card vl-video-card">
-                    <a href="@GetStreamUrl(v)" target="_blank" rel="noopener" class="vl-video-card-link">
+                    <a href="/user/watch/@v.Id" class="vl-video-card-link">
                         <span class="oi oi-play-circle" aria-hidden="true"></span>
                         <h3>@v.Title</h3>
                         <p class="vl-video-meta">@v.UploadedAt.ToString("dd MMM yyyy")</p>
@@ -63,7 +63,6 @@
 
 @code {
     [Inject] private AuthenticatedApiClient Api { get; set; } = null!;
-    [Inject] private IConfiguration Config { get; set; } = null!;
 
     private List<VideoItem> videos = new();
     private bool loading = true;
@@ -87,12 +86,6 @@
         }
     }
 
-    private string GetStreamUrl(VideoItem v)
-    {
-        var baseUrl = Config["ApiSettings:BaseUrl"]?.TrimEnd('/') ?? "";
-        var stream = v.StreamUrl?.TrimStart('/') ?? $"api/Videos/Stream/{v.Id}";
-        return $"{baseUrl}/{stream}";
-    }
 }
 
 <style>

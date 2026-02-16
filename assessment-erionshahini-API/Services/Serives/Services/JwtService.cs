@@ -24,7 +24,7 @@ public class JwtService : IJwtService
         var claims = new List<Claim>
         {
             new(ClaimTypes.NameIdentifier, userId),
-            new(JwtRegisteredClaimNames.Sub, userId), // claim standard JWT – që middleware ta gjejë
+            new(JwtRegisteredClaimNames.Sub, userId), // standard JWT claim so middleware can resolve it
             new(ClaimTypes.Email, user.Email ?? string.Empty),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };

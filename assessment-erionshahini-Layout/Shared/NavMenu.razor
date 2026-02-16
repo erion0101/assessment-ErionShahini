@@ -1,12 +1,16 @@
 <div class="vl-nav-list">
-    <NavLink class="vl-nav-item" href="/user/index" Match="NavLinkMatch.Prefix">
-        <span class="oi oi-video" aria-hidden="true"></span>
-        <span>My Videos</span>
-    </NavLink>
-    <NavLink class="vl-nav-item" href="/user/upload">
-        <span class="oi oi-plus" aria-hidden="true"></span>
-        <span>Upload</span>
-    </NavLink>
+      <AuthorizeView Roles="User">
+          <Authorized>
+                <NavLink class="vl-nav-item" href="/user/index" Match="NavLinkMatch.Prefix">
+                    <span class="oi oi-video" aria-hidden="true"></span>
+                    <span>My Videos</span>
+                </NavLink>
+                <NavLink class="vl-nav-item" href="/user/upload">
+                    <span class="oi oi-plus" aria-hidden="true"></span>
+                    <span>Upload</span>
+                </NavLink>
+          </Authorized>
+    </AuthorizeView>
     <AuthorizeView Roles="Admin">
         <Authorized>
             <NavLink class="vl-nav-item" href="/admin">

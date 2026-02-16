@@ -8,4 +8,5 @@ public interface IVideoRepository
     Task<IReadOnlyList<Video>> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default);
     Task<Video?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<Video>> GetAllAsync(CancellationToken cancellationToken = default);
+    Task DeleteAsync(Video video, CancellationToken cancellationToken = default);
 }

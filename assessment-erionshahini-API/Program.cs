@@ -68,7 +68,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             NameClaimType = System.Security.Claims.ClaimTypes.NameIdentifier,
             RoleClaimType = System.Security.Claims.ClaimTypes.Role
         };
-        // Siguron që claim "sub" nga JWT të mapehet te ClaimsPrincipal (për User.Id)
+        // Ensure the "sub" claim from JWT maps to ClaimsPrincipal (for User.Id)
         options.MapInboundClaims = false;
     });
 
@@ -80,7 +80,7 @@ builder.Services.AddSwaggerGen(c =>
 {
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        Description = "Vendos vetëm tokenin JWT (Swagger e shton 'Bearer ' automatikisht)",
+        Description = "Enter only the JWT token (Swagger adds 'Bearer ' automatically)",
         Name = "Authorization",
         In = ParameterLocation.Header,
         Type = SecuritySchemeType.Http,

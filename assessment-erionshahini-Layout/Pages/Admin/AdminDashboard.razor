@@ -3,6 +3,7 @@
 @using assessment_erionshahini_Layout.Data
 @using assessment_erionshahini_Layout.Service
 @using System.Linq
+@using Microsoft.Extensions.Caching.Memory
 
 <PageTitle>Admin - Video Lab</PageTitle>
 
@@ -23,7 +24,7 @@
         @if (videos.Count == 0)
         {
             <div class="vl-card vl-empty-card">
-                <p class="vl-text-muted">Nuk ka video për momentin.</p>
+                <p class="vl-text-muted">There are no videos at the moment.</p>
             </div>
         }
         else
@@ -32,11 +33,11 @@
                 @foreach (var v in videos.OrderByDescending(x => x.UploadedAt))
                 {
                     <article class="vl-card vl-video-card">
-                        <a href="/user/watch/@v.Id" class="vl-thumb-link" title="Open video">
+                        <a href="/admin/watch/@v.Id" class="vl-thumb-link" title="Open video">
                             <video class="vl-thumb-video" preload="metadata" muted playsinline src="@GetPlayableUrl(v)"></video>
                         </a>
                         <div class="vl-video-card-body">
-                            <a href="/user/watch/@v.Id" class="vl-video-title">@v.Title</a>
+                            <a href="/admin/watch/@v.Id" class="vl-video-title">@v.Title</a>
                             <p class="vl-video-uploader">@GetUploaderLabel(v)</p>
                             <p class="vl-video-time">@FormatTimeAgo(v.UploadedAt)</p>
                         </div>
@@ -49,9 +50,11 @@
 
 @code {
     [Inject] private AuthenticatedApiClient Api { get; set; } = null!;
-    [Inject] private IConfiguration Config { get; set; } = null!;
+    [Inject] private IMemoryCache Cache { get; set; } = null!;
+    [Inject] private NavigationManager Navigation { get; set; } = null!;
 
     private readonly List<VideoItem> videos = new();
+    private readonly Dictionary<Guid, string> streamTokens = new();
     private bool loading = true;
     private string? error;
 
@@ -63,6 +66,13 @@
             await Task.WhenAll(videosTask);
             videos.Clear();
             videos.AddRange(videosTask.Result ?? Enumerable.Empty<VideoItem>());
+            streamTokens.Clear();
+            foreach (var v in videos)
+            {
+                var token = Guid.NewGuid().ToString("N");
+                streamTokens[v.Id] = token;
+                Cache.Set($"stream:{v.Id}:{token}", true, TimeSpan.FromMinutes(20));
+            }
         }
         catch (Exception ex)
         {
@@ -76,9 +86,14 @@
 
     private string GetPlayableUrl(VideoItem v)
     {
-        var baseUrl = Config["ApiSettings:BaseUrl"]?.TrimEnd('/') ?? "";
-        var stream = v.StreamUrl?.TrimStart('/') ?? $"api/Videos/Stream/{v.Id}";
-        return $"{baseUrl}/{stream}";
+        if (!streamTokens.TryGetValue(v.Id, out var token))
+        {
+            token = Guid.NewGuid().ToString("N");
+            streamTokens[v.Id] = token;
+            Cache.Set($"stream:{v.Id}:{token}", true, TimeSpan.FromMinutes(20));
+        }
+        var baseUrl = Navigation.BaseUri.TrimEnd('/');
+        return $"{baseUrl}/stream/{v.Id}?t={token}";
     }
 
     private static string GetUploaderLabel(VideoItem v)

@@ -10,14 +10,14 @@
     <div class="vl-upload-header">
         <a href="/user/index" class="vl-back">← My Videos</a>
         <h1>Upload Video</h1>
-        <p class="vl-text-muted">Ngarko një video (deri 500 MB). Më pas mund ta shikosh, të shtosh annotime dhe bookmark.</p>
+        <p class="vl-text-muted">Upload a video (up to 500 MB). Then you can watch it and add annotations and bookmarks.</p>
     </div>
 
     @if (successVideo != null)
     {
         <div class="vl-alert vl-alert-success" role="alert">
-            <strong>Videoja u ngarkua.</strong>
-            <a href="/user/watch/@successVideo.Id">Shiko videon</a> ose <a href="/user/index">kthehu te lista</a>.
+            <strong>Video uploaded successfully.</strong>
+            <a href="/user/watch/@successVideo.Id">Watch video</a> or <a href="/user/index">go back to list</a>.
         </div>
     }
     else if (error != null)
@@ -31,12 +31,12 @@
             <ValidationSummary class="vl-validation-summary" />
 
             <div class="vl-field">
-                <label class="vl-label" for="title">Titulli i videos</label>
-                <InputText id="title" @bind-Value="model.Title" class="vl-input" placeholder="p.sh. Prezantimi im" maxlength="200" />
+                <label class="vl-label" for="title">Video title</label>
+                <InputText id="title" @bind-Value="model.Title" class="vl-input" placeholder="e.g. My presentation" maxlength="200" />
             </div>
 
             <div class="vl-field">
-                <label class="vl-label">Skedari video</label>
+                <label class="vl-label">Video file</label>
                 <InputFile id="file" OnChange="OnFileSelected" accept="video/*" class="vl-input-file" />
                 @if (selectedFile != null)
                 {
@@ -47,7 +47,7 @@
                 }
                 else
                 {
-                    <p class="vl-file-hint">Zgjidh një skedar video (MP4, WebM, etj.)</p>
+                    <p class="vl-file-hint">Choose a video file (MP4, WebM, etc.)</p>
                 }
                 @if (fileError != null)
                 {
@@ -60,15 +60,15 @@
                     @if (isUploading)
                     {
                         <span class="vl-spinner" aria-hidden="true"></span>
-                        <span>Duke ngarkuar…</span>
+                        <span>Uploading…</span>
                     }
                     else
                     {
                         <span class="oi oi-cloud-upload" aria-hidden="true"></span>
-                        <span>Ngarko videon</span>
+                        <span>Upload video</span>
                     }
                 </button>
-                <a href="/user/index" class="vl-btn vl-btn-secondary">Anulo</a>
+                <a href="/user/index" class="vl-btn vl-btn-secondary">Cancel</a>
             </div>
         </EditForm>
     </div>
@@ -91,7 +91,7 @@
         var file = e.File;
         if (file.Size > 500_000_000)
         {
-            fileError = "Skedari është më i madh se 500 MB.";
+            fileError = "File is larger than 500 MB.";
             selectedFile = null;
             return;
         }
@@ -104,7 +104,7 @@
         successVideo = null;
         if (selectedFile == null)
         {
-            fileError = "Zgjidh një skedar video.";
+            fileError = "Choose a video file.";
             return;
         }
         fileError = null;
@@ -134,7 +134,7 @@
 
     private class UploadModel
     {
-        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Titulli është i detyrueshëm.")]
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Title is required.")]
         [System.ComponentModel.DataAnnotations.MaxLength(200)]
         public string Title { get; set; } = string.Empty;
     }
