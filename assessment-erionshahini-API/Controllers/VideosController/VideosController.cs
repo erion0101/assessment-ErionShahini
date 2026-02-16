@@ -14,10 +14,12 @@ namespace assessment_erionshahini_API.Controllers;
 public class VideosController : ControllerBase
 {
     private readonly IVideoService _videoService;
+    private readonly IStreamTokenValidator _streamTokenValidator;
 
-    public VideosController(IVideoService videoService)
+    public VideosController(IVideoService videoService, IStreamTokenValidator streamTokenValidator)
     {
         _videoService = videoService;
+        _streamTokenValidator = streamTokenValidator;
     }
 
     /// <summary>Upload a video (multipart). Only authenticated user.</summary>
@@ -51,10 +53,9 @@ public class VideosController : ControllerBase
         return Ok(list);
     }
 
-    /// <summary>Get one video metadata and stream URL.</summary>
+    /// <summary>Get one video metadata and stream URL. Requires authentication.</summary>
     [HttpGet]
     [Route("[action]/{id:guid}")]
-    [AllowAnonymous]
     public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
     {
         var video = await _videoService.GetByIdAsync(id, cancellationToken);
@@ -62,15 +63,26 @@ public class VideosController : ControllerBase
         return Ok(video);
     }
 
-    /// <summary>Stream or download the video file. Can open this URL in browser to watch.</summary>
+    /// <summary>Stream the video file. Requires valid stream token (from Blazor proxy) or authenticated user.</summary>
     [HttpGet]
     [Route("[action]/{id:guid}")]
     [AllowAnonymous]
     public async Task<IActionResult> Stream(Guid id, CancellationToken cancellationToken)
     {
-        var (fullPath, contentType) = await _videoService.GetStreamInfoAsync(id, cancellationToken);
-        if (fullPath == null) return NotFound();
-        return PhysicalFile(fullPath, contentType ?? "application/octet-stream", enableRangeProcessing: true);
+        var authHeader = Request.Headers.Authorization.FirstOrDefault();
+        if (_streamTokenValidator.TryValidate(authHeader, id, out _))
+        {
+            var (fullPath, contentType) = await _videoService.GetStreamInfoAsync(id, cancellationToken);
+            if (fullPath == null) return NotFound();
+            return PhysicalFile(fullPath, contentType ?? "application/octet-stream", enableRangeProcessing: true);
+        }
+        if (User.Identity?.IsAuthenticated == true)
+        {
+            var (fullPath, contentType) = await _videoService.GetStreamInfoAsync(id, cancellationToken);
+            if (fullPath == null) return NotFound();
+            return PhysicalFile(fullPath, contentType ?? "application/octet-stream", enableRangeProcessing: true);
+        }
+        return Unauthorized();
     }
 
     /// <summary>Delete a video (and its file). Owner or admin.</summary>

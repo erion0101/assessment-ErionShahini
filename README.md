@@ -23,9 +23,10 @@ Admin users can access global overview pages for videos, annotations, and bookma
   - Access token kept in memory on the Blazor side
   - Refresh token kept in DB and managed via HttpOnly cookie on API side
 - Video streaming model:
-  - Blazor serves `/stream/{id}?t=...` as a same-origin proxy (short-lived token in cache; token is issued when an authenticated user loads the Watch page)
-  - Proxy forwards `Range` requests and partial content headers for seek support
-  - **Limitation**: API endpoint `GET /api/Videos/Stream/{id}` is currently `[AllowAnonymous]`; direct use of that URL (without going through the Blazor proxy) is not restricted. Securing it (e.g. signed stream token or proxy sending Bearer) is a recommended improvement.
+  - Blazor serves `/stream/{id}?t=...&st=...` as a same-origin proxy (cache token `t` + signed stream JWT `st`)
+  - Proxy forwards the stream JWT as `Authorization: Bearer` to the API and forwards `Range` requests for seek support
+  - API `GET /api/Videos/Stream/{id}` accepts only (1) a valid stream token (JWT with claim `vid`, signed with same secret as API) or (2) an authenticated user. Direct call without token or user returns 401.
+  - `GET /api/Videos/GetById/{id}` requires authentication.
 
 ## Tech Stack
 
@@ -64,6 +65,11 @@ In `assessment-erionshahini-API/appsettings.json`, configure:
 - `JwtSettings:Audience`
 - Optional CORS origins if needed
 
+In `assessment-erionshahini-Layout/appsettings.json` or `appsettings.Development.json`, set:
+
+- `ApiSettings:BaseUrl` (API base URL)
+- `ApiSettings:StreamTokenSecret` — **must match** the API’s `JwtSettings:Secret` (used to sign stream JWTs so the API can validate them)
+
 Example connection string:
 
 `Server=localhost;Database=AssessmentErionShahiniDB;Trusted_Connection=True;TrustServerCertificate=True;`
@@ -93,6 +99,56 @@ dotnet run
 ```
 
 UI URL is typically `https://localhost:7039`.
+
+### 6) Run with Docker (API + Blazor + SQL Server)
+
+**Prerequisites:** Docker and Docker Compose installed.
+
+From the **repository root**:
+
+```bash
+# Optional: copy .env.example to .env and set MSSQL_SA_PASSWORD / JWT_SECRET
+docker compose up -d --build
+```
+
+Wait ~30 seconds for SQL Server to accept connections, then apply migrations **from your machine** (one time).
+
+**PowerShell (Windows):**
+```powershell
+cd assessment-erionshahini-API
+$env:ConnectionStrings__DefaultConnection="Server=localhost,1433;Database=AssessmentErionShahiniDB;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=True"
+dotnet ef database update
+```
+
+**CMD (Windows):**
+```cmd
+cd assessment-erionshahini-API
+set ConnectionStrings__DefaultConnection=Server=localhost,1433;Database=AssessmentErionShahiniDB;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=True
+dotnet ef database update
+```
+
+**Linux/macOS:**
+```bash
+cd assessment-erionshahini-API
+export ConnectionStrings__DefaultConnection="Server=localhost,1433;Database=AssessmentErionShahiniDB;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=True"
+dotnet ef database update
+```
+
+If the API container exits with a DB connection error, restart it after SQL is up:
+
+```bash
+docker compose restart api
+```
+
+- **Blazor UI:** http://localhost:5206  
+- **API Swagger:** http://localhost:7294/swagger  
+- **SQL Server:** localhost:1433 (user `sa`, password from `MSSQL_SA_PASSWORD` or default `YourStrong@Passw0rd`)
+
+Stop everything:
+
+```bash
+docker compose down
+```
 
 ## Main Endpoints
 
@@ -130,7 +186,7 @@ UI URL is typically `https://localhost:7039`.
 5. Confirm annotation overlay appears during playback at the saved timestamp.
 6. Logout and verify protected pages redirect/deny access.
 7. Login as admin and verify admin pages list all videos/annotations/bookmarks.
-8. Try direct API stream URL without auth: currently it is **not** blocked (API has `AllowAnonymous` on Stream); only the Blazor proxy route is protected by the token. See "Limitation" in Architecture.
+8. Try direct API stream URL without auth: should return **401** (API accepts only valid stream token or authenticated user).
 
 ## Assumptions, Shortcuts, and Limitations
 

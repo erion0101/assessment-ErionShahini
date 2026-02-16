@@ -1,0 +1,51 @@
+# Video Lab: API + Blazor + SQL Server
+# Run from repo root: docker compose up -d
+# Then run migrations once: docker compose run --rm api dotnet ef database update --no-build
+
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: vl-sqlserver
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "${MSSQL_SA_PASSWORD:-YourStrong@Passw0rd}"
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+
+  api:
+    build:
+      context: .
+      dockerfile: assessment-erionshahini-API/Dockerfile
+    container_name: vl-api
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: "http://+:8080"
+      ConnectionStrings__DefaultConnection: "Server=sqlserver;Database=AssessmentErionShahiniDB;User Id=sa;Password=${MSSQL_SA_PASSWORD:-YourStrong@Passw0rd};TrustServerCertificate=True;MultipleActiveResultSets=true"
+      JwtSettings__Secret: "${JWT_SECRET:-@kjans1231ASDAOLM*(*23123abcdefghi}"
+      JwtSettings__Issuer: "http://api:8080"
+      JwtSettings__Audience: "http://api:8080"
+      Cors__AllowedOrigins: "http://localhost:5206"
+    ports:
+      - "7294:8080"
+    depends_on:
+      - sqlserver
+
+  blazor:
+    build:
+      context: .
+      dockerfile: assessment-erionshahini-Layout/Dockerfile
+    container_name: vl-blazor
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: "http://+:80"
+      ApiSettings__BaseUrl: "http://api:8080"
+      ApiSettings__StreamTokenSecret: "${JWT_SECRET:-@kjans1231ASDAOLM*(*23123abcdefghi}"
+    ports:
+      - "5206:80"
+    depends_on:
+      - api
+
+volumes:
+  sqlserver-data:

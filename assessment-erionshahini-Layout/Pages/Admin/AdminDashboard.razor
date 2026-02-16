@@ -52,6 +52,7 @@
     [Inject] private AuthenticatedApiClient Api { get; set; } = null!;
     [Inject] private IMemoryCache Cache { get; set; } = null!;
     [Inject] private NavigationManager Navigation { get; set; } = null!;
+    [Inject] private IStreamTokenService StreamToken { get; set; } = null!;
 
     private readonly List<VideoItem> videos = new();
     private readonly Dictionary<Guid, string> streamTokens = new();
@@ -92,8 +93,9 @@
             streamTokens[v.Id] = token;
             Cache.Set($"stream:{v.Id}:{token}", true, TimeSpan.FromMinutes(20));
         }
+        var streamJwt = StreamToken.CreateStreamToken(v.Id);
         var baseUrl = Navigation.BaseUri.TrimEnd('/');
-        return $"{baseUrl}/stream/{v.Id}?t={token}";
+        return $"{baseUrl}/stream/{v.Id}?t={token}&st={Uri.EscapeDataString(streamJwt)}";
     }
 
     private static string GetUploaderLabel(VideoItem v)

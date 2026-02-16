@@ -47,6 +47,7 @@ builder.Services.AddHttpClient("VideoLabApi", (sp, client) =>
 builder.Services.AddScoped<AuthenticatedApiClient>();
 
 builder.Services.AddMemoryCache();
+builder.Services.AddScoped<IStreamTokenService, StreamTokenService>();
 builder.Services.AddHttpClient("StreamProxyApi", (sp, client) =>
 {
     var baseUrl = sp.GetRequiredService<IConfiguration>()["ApiSettings:BaseUrl"] ?? "https://localhost:7294";
@@ -71,6 +72,7 @@ app.UseRouting();
 app.MapGet("/stream/{id:guid}", async (
     Guid id,
     [FromQuery] string? t,
+    [FromQuery] string? st,
     HttpContext httpContext,
     IMemoryCache cache,
     IHttpClientFactory factory,
@@ -86,6 +88,8 @@ app.MapGet("/stream/{id:guid}", async (
     var streamUrl = $"/api/Videos/Stream/{id}";
     using var upstreamRequest = new HttpRequestMessage(HttpMethod.Get, streamUrl);
 
+    if (!string.IsNullOrEmpty(st))
+        upstreamRequest.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", st);
     if (httpContext.Request.Headers.TryGetValue("Range", out var rangeValue))
         upstreamRequest.Headers.TryAddWithoutValidation("Range", rangeValue.ToString());
 

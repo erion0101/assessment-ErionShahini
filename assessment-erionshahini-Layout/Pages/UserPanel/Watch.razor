@@ -48,89 +48,13 @@
                     <span class="vl-pip-unsupported">PiP is not supported by this browser.</span>
                 }
             </p>
+            @if (_taniMessage != null)
+            {
+                <p class="vl-tani-message" role="alert">@_taniMessage</p>
+            }
             <div class="vl-notes-layout">
-                <div class="vl-watch-notes-intro">
-                    <p class="vl-watch-notes-intro-text">Click a timestamp (min:sec) to jump to that point in the video.</p>
-                    @if (_taniMessage != null)
-                    {
-                        <p class="vl-tani-message" role="alert">@_taniMessage</p>
-                    }
-                    @if (annotations.Count > 0 || bookmarks.Count > 0)
-                    {
-                        <div class="vl-watch-notes-preview">
-                            @if (annotations.Count > 0)
-                            {
-                                <div class="vl-preview-group">
-                                    <p class="vl-preview-group-title">Annotations</p>
-                                    <ul class="vl-preview-list">
-                                        @foreach (var a in annotations.Take(4))
-                                        {
-                                            <li class="vl-preview-item">
-                                                <button type="button" class="vl-preview-time vl-seek-btn" data-kind="annotation" data-seek="@a.TimestampSeconds.ToString(System.Globalization.CultureInfo.InvariantCulture)" title="Jump to this moment">@FormatTime(a.TimestampSeconds)</button>
-                                                <span class="vl-preview-text">@a.Description</span>
-                                            </li>
-                                        }
-                                    </ul>
-                                </div>
-                            }
-                            @if (bookmarks.Count > 0)
-                            {
-                                <div class="vl-preview-group">
-                                    <p class="vl-preview-group-title">Bookmarks</p>
-                                    <ul class="vl-preview-list">
-                                        @foreach (var b in bookmarks.Take(4))
-                                        {
-                                            <li class="vl-preview-item">
-                                                <button type="button" class="vl-preview-time vl-seek-btn" data-kind="bookmark" data-seek="@b.TimestampSeconds.ToString(System.Globalization.CultureInfo.InvariantCulture)" title="Jump to this moment">@FormatTime(b.TimestampSeconds)</button>
-                                                <span class="vl-preview-text">@b.Title</span>
-                                            </li>
-                                        }
-                                    </ul>
-                                </div>
-                            }
-                        </div>
-                    }
-                </div>
-
                 <div class="vl-watch-notes">
-                <section class="vl-notes-section">
-                    <div class="vl-section-heading">
-                        <h2 class="vl-notes-section-title">📝 Annotations</h2>
-                        @if (annotations.Count > 0)
-                        {
-                            <span class="vl-count-badge">@annotations.Count</span>
-                        }
-                    </div>
-                    <p class="vl-notes-section-desc">Notes attached to a specific moment in the video. Click a timestamp to jump there.</p>
-                    <div class="vl-add-form">
-                        <input @bind="_newAnnotationDesc" placeholder="Description" class="vl-input vl-input-sm" />
-                        <span class="vl-time-label">Time (sec):</span>
-                        <input type="number" step="0.1" min="0" @bind="_newAnnotationTime" class="vl-input vl-input-num" />
-                        <button type="button" class="vl-btn vl-btn-sm vl-btn-secondary" @onclick="UseCurrentTimeForAnnotation">Now</button>
-                        <button type="button" class="vl-btn vl-btn-sm vl-btn-primary" disabled="@(string.IsNullOrWhiteSpace(_newAnnotationDesc))" @onclick="AddAnnotation">Add</button>
-                    </div>
-                    @if (annotations.Count == 0)
-                    {
-                        <p class="vl-empty-notes">No annotations yet.</p>
-                    }
-                    else
-                    {
-                        <ul class="vl-notes-list">
-                            @foreach (var a in annotations)
-                            {
-                                var annTime = a.TimestampSeconds;
-                                var annId = a.Id;
-                                <li class="vl-note-item @(annId == _activeAnnotationId ? "is-active" : "")">
-                                    <button type="button" class="vl-note-time vl-seek-btn" data-kind="annotation" data-seek="@annTime.ToString(System.Globalization.CultureInfo.InvariantCulture)" title="Jump to this moment in the video">@FormatTime(annTime)</button>
-                                    <span class="vl-note-text">@a.Description</span>
-                                    <button type="button" class="vl-btn vl-btn-sm vl-btn-ghost" aria-label="Delete" @onclick="@(() => DeleteAnnotation(annId))">✕</button>
-                                </li>
-                            }
-                        </ul>
-                    }
-                </section>
-
-                <section class="vl-notes-section">
+                <section class="vl-notes-section vl-notes-section-bookmarks">
                     <div class="vl-section-heading">
                         <h2 class="vl-notes-section-title">🔖 Bookmarks</h2>
                         @if (bookmarks.Count > 0)
@@ -138,32 +62,105 @@
                             <span class="vl-count-badge">@bookmarks.Count</span>
                         }
                     </div>
-                    <p class="vl-notes-section-desc">Save points to quickly return to a part of the video. Click a timestamp to jump there.</p>
-                    <div class="vl-add-form">
-                        <input @bind="_newBookmarkTitle" placeholder="Title" class="vl-input vl-input-sm" />
-                        <span class="vl-time-label">Time (sec):</span>
-                        <input type="number" step="0.1" min="0" @bind="_newBookmarkTime" class="vl-input vl-input-num" />
-                        <button type="button" class="vl-btn vl-btn-sm vl-btn-secondary" @onclick="UseCurrentTimeForBookmark">Now</button>
-                        <button type="button" class="vl-btn vl-btn-sm vl-btn-primary" disabled="@(string.IsNullOrWhiteSpace(_newBookmarkTitle))" @onclick="AddBookmark">Add</button>
+                    <p class="vl-notes-section-desc">Save points to return to a part of the video. Click a timestamp to jump there.</p>
+
+                    <div class="vl-add-card">
+                        <span class="vl-add-card-label">Add bookmark</span>
+                        <div class="vl-add-form vl-add-form-stacked">
+                            <div class="vl-add-form-row vl-add-form-row-desc">
+                                <input @bind="_newBookmarkTitle" placeholder="Title" class="vl-input vl-input-text" aria-label="Bookmark title" />
+                            </div>
+                            <div class="vl-add-form-row vl-add-form-row-actions">
+                                <label class="vl-add-form-time-wrap">
+                                    <span class="vl-time-label">Time (sec)</span>
+                                    <input type="number" step="0.1" min="0" @bind="_newBookmarkTime" class="vl-input vl-input-num" aria-label="Timestamp in seconds" />
+                                </label>
+                                <button type="button" class="vl-btn vl-btn-sm vl-btn-secondary vl-btn-now" @onclick="UseCurrentTimeForBookmark">Now</button>
+                                <button type="button" class="vl-btn vl-btn-sm vl-btn-primary" disabled="@(string.IsNullOrWhiteSpace(_newBookmarkTitle))" @onclick="AddBookmark">Add</button>
+                            </div>
+                        </div>
                     </div>
-                    @if (bookmarks.Count == 0)
+
+                    @if (bookmarks.Count > 0)
                     {
-                        <p class="vl-empty-notes">No bookmarks yet.</p>
-                    }
-                    else
-                    {
+                        <div class="vl-filter-wrap">
+                            <input id="vl-bookmark-search" type="text" @bind="_bookmarkFilter" @bind:event="oninput" placeholder="Search bookmarks…" class="vl-input vl-input-search" aria-label="Filter bookmarks" />
+                        </div>
                         <ul class="vl-notes-list">
-                            @foreach (var b in bookmarks)
+                            @foreach (var b in FilteredBookmarks)
                             {
                                 var bookTime = b.TimestampSeconds;
                                 var bookId = b.Id;
                                 <li class="vl-note-item">
-                                    <button type="button" class="vl-note-time vl-seek-btn" data-kind="bookmark" data-seek="@bookTime.ToString(System.Globalization.CultureInfo.InvariantCulture)" title="Jump to this moment in the video">@FormatTime(bookTime)</button>
+                                    <button type="button" class="vl-note-time vl-seek-btn" data-kind="bookmark" data-seek="@bookTime.ToString(System.Globalization.CultureInfo.InvariantCulture)" title="Jump to this moment">@FormatTime(bookTime)</button>
                                     <span class="vl-note-text">@b.Title</span>
-                                    <button type="button" class="vl-btn vl-btn-sm vl-btn-ghost" aria-label="Delete" @onclick="@(() => DeleteBookmark(bookId))">✕</button>
+                                    <button type="button" class="vl-btn vl-btn-icon vl-btn-remove" aria-label="Delete bookmark" @onclick="@(() => DeleteBookmark(bookId))" title="Remove">×</button>
                                 </li>
                             }
                         </ul>
+                        @if (FilteredBookmarks.Count == 0 && !string.IsNullOrWhiteSpace(_bookmarkFilter))
+                        {
+                            <p class="vl-empty-notes vl-empty-filtered">No bookmarks match "<em>@_bookmarkFilter</em>".</p>
+                        }
+                    }
+                    else
+                    {
+                        <p class="vl-empty-notes">No bookmarks yet. Add one above.</p>
+                    }
+                </section>
+
+                <section class="vl-notes-section vl-notes-section-annotations">
+                    <div class="vl-section-heading">
+                        <h2 class="vl-notes-section-title">📝 Annotations</h2>
+                        @if (annotations.Count > 0)
+                        {
+                            <span class="vl-count-badge">@annotations.Count</span>
+                        }
+                    </div>
+                    <p class="vl-notes-section-desc">Notes at a specific moment. Click a timestamp to jump there.</p>
+
+                    <div class="vl-add-card">
+                        <span class="vl-add-card-label">Add annotation</span>
+                        <div class="vl-add-form vl-add-form-stacked">
+                            <div class="vl-add-form-row vl-add-form-row-desc">
+                                <input @bind="_newAnnotationDesc" placeholder="Description" class="vl-input vl-input-text" aria-label="Annotation description" />
+                            </div>
+                            <div class="vl-add-form-row vl-add-form-row-actions">
+                                <label class="vl-add-form-time-wrap">
+                                    <span class="vl-time-label">Time (sec)</span>
+                                    <input type="number" step="0.1" min="0" @bind="_newAnnotationTime" class="vl-input vl-input-num" aria-label="Timestamp in seconds" />
+                                </label>
+                                <button type="button" class="vl-btn vl-btn-sm vl-btn-secondary vl-btn-now" @onclick="UseCurrentTimeForAnnotation">Now</button>
+                                <button type="button" class="vl-btn vl-btn-sm vl-btn-primary" disabled="@(string.IsNullOrWhiteSpace(_newAnnotationDesc))" @onclick="AddAnnotation">Add</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    @if (annotations.Count > 0)
+                    {
+                        <div class="vl-filter-wrap">
+                            <input id="vl-annotation-search" type="text" @bind="_annotationFilter" @bind:event="oninput" placeholder="Search annotations…" class="vl-input vl-input-search" aria-label="Filter annotations" />
+                        </div>
+                        <ul class="vl-notes-list">
+                            @foreach (var a in FilteredAnnotations)
+                            {
+                                var annTime = a.TimestampSeconds;
+                                var annId = a.Id;
+                                <li class="vl-note-item @(annId == _activeAnnotationId ? "is-active" : "")">
+                                    <button type="button" class="vl-note-time vl-seek-btn" data-kind="annotation" data-seek="@annTime.ToString(System.Globalization.CultureInfo.InvariantCulture)" title="Jump to this moment">@FormatTime(annTime)</button>
+                                    <span class="vl-note-text">@a.Description</span>
+                                    <button type="button" class="vl-btn vl-btn-icon vl-btn-remove" aria-label="Delete annotation" @onclick="@(() => DeleteAnnotation(annId))" title="Remove">×</button>
+                                </li>
+                            }
+                        </ul>
+                        @if (FilteredAnnotations.Count == 0 && !string.IsNullOrWhiteSpace(_annotationFilter))
+                        {
+                            <p class="vl-empty-notes vl-empty-filtered">No annotations match "<em>@_annotationFilter</em>".</p>
+                        }
+                    }
+                    else
+                    {
+                        <p class="vl-empty-notes">No annotations yet. Add one above.</p>
                     }
                 </section>
             </div>
@@ -182,6 +179,7 @@
     [Inject] private IMemoryCache Cache { get; set; } = null!;
     [Inject] private NavigationManager Navigation { get; set; } = null!;
     [Inject] private IJSRuntime JS { get; set; } = null!;
+    [Inject] private IStreamTokenService StreamToken { get; set; } = null!;
 
     private ElementReference _videoRef;
     private VideoItem? video;
@@ -195,8 +193,18 @@
     private double _newAnnotationTime;
     private string _newBookmarkTitle = "";
     private double _newBookmarkTime;
+    private string _annotationFilter = "";
+    private string _bookmarkFilter = "";
     private string? _taniMessage;
     private bool? _pipSupported;
+
+    private IReadOnlyList<AnnotationItem> FilteredAnnotations => string.IsNullOrWhiteSpace(_annotationFilter)
+        ? annotations
+        : annotations.Where(a => (a.Description ?? "").Contains(_annotationFilter, StringComparison.OrdinalIgnoreCase)).ToList();
+
+    private IReadOnlyList<BookmarkItem> FilteredBookmarks => string.IsNullOrWhiteSpace(_bookmarkFilter)
+        ? bookmarks
+        : bookmarks.Where(b => (b.Title ?? "").Contains(_bookmarkFilter, StringComparison.OrdinalIgnoreCase)).ToList();
     private bool _isInPiP;
     private DotNetObjectReference<Watch>? _selfRef;
     private Guid? _activeAnnotationId;
@@ -214,8 +222,9 @@
             {
                 var token = Guid.NewGuid().ToString("N");
                 Cache.Set($"stream:{Id}:{token}", true, TimeSpan.FromMinutes(2));
+                var streamJwt = StreamToken.CreateStreamToken(Id);
                 var baseUrl = Navigation.BaseUri.TrimEnd('/');
-                streamUrl = $"{baseUrl}/stream/{Id}?t={token}";
+                streamUrl = $"{baseUrl}/stream/{Id}?t={token}&st={Uri.EscapeDataString(streamJwt)}";
                 await LoadNotesAsync();
             }
         }
@@ -754,109 +763,30 @@
         font-size: 0.78rem;
     }
 
-    .vl-watch-notes-intro {
-        max-width: 360px;
-        padding: 0.9rem 1.1rem;
-        background: #fff;
-        border: 1px solid var(--vl-border);
-        border-radius: 14px;
-        font-size: 0.9375rem;
-        color: var(--vl-text);
-        box-shadow: var(--vl-shadow);
-        align-self: start;
-        position: sticky;
-        top: 1rem;
-    }
-
-    .vl-watch-notes-intro-text { margin: 0 0 0.5rem 0; }
-
     .vl-tani-message {
         margin: 0.5rem 0 0 0;
         font-size: 0.875rem;
         color: var(--vl-danger, #dc2626);
     }
 
-    .vl-watch-notes-preview {
-        display: grid;
-        gap: 0.75rem;
-        margin-top: 0.5rem;
-    }
-
-    .vl-preview-group {
-        border: 1px solid var(--vl-border);
-        border-radius: 12px;
-        background: #f8fafc;
-        padding: 0.6rem;
-    }
-
-    .vl-preview-group-title {
-        margin: 0 0 0.45rem 0;
-        font-size: 0.78rem;
-        text-transform: uppercase;
-        letter-spacing: 0.03em;
-        font-weight: 800;
-        color: var(--vl-text-muted);
-    }
-
-    .vl-preview-list {
-        list-style: none;
-        margin: 0;
-        padding: 0;
-        display: grid;
-        gap: 0.4rem;
-    }
-
-    .vl-preview-item {
-        display: grid;
-        grid-template-columns: auto 1fr;
-        align-items: center;
-        gap: 0.45rem;
-        background: #fff;
-        border: 1px solid #e5e7eb;
-        border-radius: 10px;
-        padding: 0.32rem 0.45rem;
-    }
-
-    .vl-preview-time,
-    .vl-note-time {
-        border: none;
-        background: var(--vl-accent-muted);
-        color: #0e7490;
-        font-weight: 700;
-        cursor: pointer;
-        padding: 0.22rem 0.55rem;
-        border-radius: 999px;
-        font-size: 0.8125rem;
-        transition: background 0.2s ease, transform 0.2s ease;
-    }
-
-    .vl-preview-time:hover,
-    .vl-note-time:hover {
-        background: rgba(6, 182, 212, 0.2);
-        transform: translateY(-1px);
-    }
-
-    .vl-preview-text {
-        min-width: 0;
-        font-size: 0.84rem;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+    .vl-notes-layout {
+        max-width: 1200px;
+        margin-bottom: 50px;
     }
 
     .vl-watch-notes {
         display: grid;
-        grid-template-columns: 1fr;
-        gap: 0.9rem;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
         min-width: 0;
     }
 
-    .vl-notes-layout {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
-        gap: 1rem;
-        max-width: 1200px;
-        align-items: start;
+    .vl-watch-notes .vl-notes-section-bookmarks {
+        min-width: 0;
+    }
+
+    .vl-watch-notes .vl-notes-section-annotations {
+        min-width: 0;
     }
 
     .vl-notes-section {
@@ -900,85 +830,251 @@
         margin: 0 0 0.7rem 0;
     }
 
-    .vl-add-form {
-        display: grid;
-        grid-template-columns: 1fr auto auto auto auto;
-        gap: 0.5rem;
-        align-items: center;
+    /* --- Inputs (unified) --- */
+    .vl-notes-section .vl-input {
+        width: 100%;
+        max-width: 100%;
+        padding: 0.5rem 0.75rem;
+        font-size: 0.875rem;
+        font-family: inherit;
+        color: var(--vl-text);
+        background: #fff;
+        border: 1px solid var(--vl-border);
+        border-radius: var(--vl-radius-sm);
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .vl-notes-section .vl-input::placeholder {
+        color: var(--vl-text-muted);
+    }
+    .vl-notes-section .vl-input:hover {
+        border-color: #cbd5e1;
+    }
+    .vl-notes-section .vl-input:focus {
+        outline: none;
+        border-color: var(--vl-accent);
+        box-shadow: 0 0 0 3px var(--vl-accent-muted);
+    }
+
+    .vl-input-text {
+        min-height: 2.25rem;
+    }
+    .vl-input-search {
+        padding-left: 2.25rem;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%2364748b' viewBox='0 0 16 16'%3E%3Cpath d='M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: 0.65rem center;
+        background-size: 1rem;
+    }
+    .vl-input-num {
+        width: 5rem;
+        min-width: 4rem;
+        text-align: right;
+    }
+
+    .vl-filter-wrap {
         margin-bottom: 0.85rem;
     }
-
-    .vl-input-sm {
-        min-width: 160px;
+    .vl-filter-wrap .vl-input-search {
+        max-width: 100%;
     }
 
-    .vl-input-num {
-        width: 6rem;
+    .vl-add-card {
+        background: var(--vl-bg);
+        border: 1px solid var(--vl-border);
+        border-radius: var(--vl-radius);
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+    .vl-add-card-label {
+        display: block;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--vl-text-muted);
+        margin-bottom: 0.6rem;
+    }
+    .vl-add-form-stacked {
+        display: flex;
+        flex-direction: column;
+        gap: 0.65rem;
+    }
+    .vl-add-form-row {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+    .vl-add-form-row-desc .vl-input-text {
+        flex: 1;
+        min-width: 0;
+    }
+    .vl-add-form-time-wrap {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        font-size: 0.8125rem;
+        color: var(--vl-text-muted);
+    }
+    .vl-add-form-time-wrap .vl-time-label {
+        white-space: nowrap;
+    }
+    .vl-add-form-time-wrap .vl-input-num {
+        width: 5rem;
+    }
+    /* Action row buttons: Now + Add */
+    .vl-add-form-row-actions .vl-btn {
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+        border-radius: var(--vl-radius-sm);
+        border: none;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.35rem;
+        transition: transform 0.18s ease, box-shadow 0.2s ease, background 0.2s ease, color 0.2s ease;
+    }
+    .vl-add-form-row-actions .vl-btn:focus-visible {
+        outline: none;
+        box-shadow: 0 0 0 3px var(--vl-accent-muted);
+    }
+    .vl-add-form-row-actions .vl-btn:active:not(:disabled) {
+        transform: scale(0.97);
+    }
+    .vl-add-form-row-actions .vl-btn-sm.vl-btn-secondary.vl-btn-now {
+        background: var(--vl-accent-muted);
+        color: var(--vl-accent);
+        border: 1px solid rgba(6, 182, 212, 0.35);
+    }
+    .vl-add-form-row-actions .vl-btn-sm.vl-btn-secondary.vl-btn-now:hover:not(:disabled) {
+        background: rgba(6, 182, 212, 0.2);
+        border-color: var(--vl-accent);
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(6, 182, 212, 0.25);
+    }
+    .vl-add-form-row-actions .vl-btn-sm.vl-btn-primary {
+        background: linear-gradient(180deg, var(--vl-accent) 0%, var(--vl-accent-hover) 100%);
+        color: #fff;
+        box-shadow: 0 2px 6px rgba(6, 182, 212, 0.35);
+    }
+    .vl-add-form-row-actions .vl-btn-sm.vl-btn-primary:hover:not(:disabled) {
+        background: linear-gradient(180deg, var(--vl-accent-hover) 0%, #0e7490 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(6, 182, 212, 0.4);
+    }
+    .vl-add-form-row-actions .vl-btn-sm.vl-btn-primary:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+    }
+    .vl-btn-now {
+        flex-shrink: 0;
     }
 
     .vl-time-label {
         font-size: 0.8125rem;
         color: var(--vl-text-muted);
-        white-space: nowrap;
     }
 
     .vl-empty-notes {
-        font-size: 0.84rem;
+        font-size: 0.875rem;
         color: var(--vl-text-muted);
         margin: 0;
+        padding: 0.5rem 0;
     }
+    .vl-empty-filtered {
+        padding: 0.75rem;
+        background: var(--vl-bg);
+        border-radius: var(--vl-radius-sm);
+    }
+
+    .vl-notes-section {
+        padding: 1.1rem;
+        border: 1px solid var(--vl-border);
+    }
+  
 
     .vl-notes-list {
         list-style: none;
         padding: 0;
         margin: 0;
-        display: grid;
-        gap: 0.45rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.4rem;
     }
 
     .vl-note-item {
         display: grid;
         grid-template-columns: auto 1fr auto;
         align-items: center;
-        gap: 0.6rem;
-        padding: 0.55rem 0.55rem;
-        border: 1px solid #e5e7eb;
-        border-radius: 12px;
+        gap: 0.65rem;
+        padding: 0.5rem 0.65rem;
+        border: 1px solid var(--vl-border);
+        border-radius: var(--vl-radius-sm);
         background: #fff;
-        transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+        transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
     }
 
     .vl-note-item:hover {
-        border-color: #c7d2fe;
-        background: #f8fafc;
-        transform: translateY(-1px);
+        border-color: #cbd5e1;
+        background: var(--vl-bg);
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
     }
 
     .vl-note-item.is-active {
-        border-color: #06b6d4;
+        border-color: var(--vl-accent);
         background: #ecfeff;
+        box-shadow: 0 0 0 1px rgba(6, 182, 212, 0.2);
     }
 
     .vl-note-text {
         min-width: 0;
         font-size: 0.875rem;
+        line-height: 1.35;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
     .vl-note-time {
+        flex-shrink: 0;
         background: #e0f2fe;
-        color: #075985;
-        font-size: 0.78rem;
-        padding: 0.24rem 0.58rem;
+        color: #0e7490;
+        font-size: 0.8rem;
+        font-weight: 700;
+        padding: 0.28rem 0.6rem;
+        border-radius: 999px;
+        border: none;
+        cursor: pointer;
+        transition: background 0.2s, color 0.2s;
+    }
+    .vl-note-time:hover {
+        background: #bae6fd;
+        color: #0369a1;
     }
 
-    .vl-btn-ghost {
-        background: none;
+    .vl-btn-icon {
+        width: 1.75rem;
+        height: 1.75rem;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: none;
+        border-radius: var(--vl-radius-sm);
+        font-size: 1.15rem;
+        line-height: 1;
+        cursor: pointer;
+        transition: background 0.15s, color 0.15s;
+    }
+    .vl-btn-remove {
         color: var(--vl-text-muted);
-        padding: 0.2rem 0.45rem;
-        border-radius: 8px;
+        background: transparent;
     }
-
-    .vl-btn-ghost:hover {
+    .vl-btn-remove:hover {
         color: var(--vl-danger, #dc2626);
         background: #fef2f2;
     }
@@ -994,22 +1090,16 @@
     }
 
     @@media (max-width: 860px) {
-        .vl-notes-layout {
+        .vl-watch-notes {
             grid-template-columns: 1fr;
         }
 
-        .vl-watch-notes-intro {
-            max-width: 100%;
-            position: static;
+        .vl-add-form-row-actions {
+            flex-wrap: wrap;
         }
-
-        .vl-add-form {
-            grid-template-columns: 1fr;
-            align-items: stretch;
-        }
-
-        .vl-input-num {
+        .vl-add-form-time-wrap .vl-input-num {
             width: 100%;
+            min-width: 0;
         }
     }
 

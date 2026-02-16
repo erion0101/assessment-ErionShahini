@@ -22,6 +22,7 @@ builder.Services.AddIdentity<User, IdentityRole<Guid>>()
 
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection(JwtSettings.SectionName));
 builder.Services.AddScoped<IJwtService, JwtService>();
+builder.Services.AddScoped<IStreamTokenValidator, StreamTokenValidator>();
 
 builder.Services.AddScoped<IRoleRepository, RoleRepository>();
 builder.Services.AddScoped<IRoleService, RoleService>();

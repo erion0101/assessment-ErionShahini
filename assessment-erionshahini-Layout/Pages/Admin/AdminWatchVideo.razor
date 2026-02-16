@@ -165,6 +165,7 @@
     [Inject] private IMemoryCache Cache { get; set; } = null!;
     [Inject] private NavigationManager Navigation { get; set; } = null!;
     [Inject] private IJSRuntime JS { get; set; } = null!;
+    [Inject] private IStreamTokenService StreamToken { get; set; } = null!;
 
     private ElementReference _videoRef;
     private VideoItem? video;
@@ -192,8 +193,9 @@
             {
                 var token = Guid.NewGuid().ToString("N");
                 Cache.Set($"stream:{Id}:{token}", true, TimeSpan.FromMinutes(2));
+                var streamJwt = StreamToken.CreateStreamToken(Id);
                 var baseUrl = Navigation.BaseUri.TrimEnd('/');
-                streamUrl = $"{baseUrl}/stream/{Id}?t={token}";
+                streamUrl = $"{baseUrl}/stream/{Id}?t={token}&st={Uri.EscapeDataString(streamJwt)}";
                 await LoadNotesAsync();
             }
         }
