@@ -14,6 +14,11 @@ public class UserRepository : IUserRepository
         _userManager = userManager;
     }
 
+    public async Task<int> GetCountAsync(CancellationToken cancellationToken = default)
+    {
+        return await _userManager.Users.CountAsync(cancellationToken);
+    }
+
     public async Task<User?> FindByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return await _userManager.FindByIdAsync(id.ToString());

@@ -16,3 +16,9 @@ public class CreateBookmarkRequest
     public double TimestampSeconds { get; set; }
     public string Title { get; set; } = string.Empty;
 }
+
+public class UpdateBookmarkRequest
+{
+    public double TimestampSeconds { get; set; }
+    public string Title { get; set; } = string.Empty;
+}

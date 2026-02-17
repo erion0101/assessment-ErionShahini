@@ -56,12 +56,12 @@ public class BookmarkService : IBookmarkService
         return bookmark == null ? null : ToResponse(bookmark);
     }
 
-    public async Task<Result<BookmarkResponse>> UpdateAsync(Guid id, Guid userId, UpdateBookmarkRequest request, CancellationToken cancellationToken = default)
+    public async Task<Result<BookmarkResponse>> UpdateAsync(Guid id, Guid userId, UpdateBookmarkRequest request, bool allowAdminBypass = false, CancellationToken cancellationToken = default)
     {
         var bookmark = await _bookmarkRepository.GetByIdAsync(id, cancellationToken);
         if (bookmark == null)
             return Result<BookmarkResponse>.Failure("Bookmark not found.");
-        if (bookmark.UserId != userId)
+        if (!allowAdminBypass && bookmark.UserId != userId)
             return Result<BookmarkResponse>.Failure("You can only update your own bookmark.");
 
         bookmark.TimestampSeconds = request.TimestampSeconds;
@@ -70,12 +70,12 @@ public class BookmarkService : IBookmarkService
         return Result<BookmarkResponse>.Success(ToResponse(bookmark));
     }
 
-    public async Task<Result<bool>> DeleteAsync(Guid id, Guid userId, CancellationToken cancellationToken = default)
+    public async Task<Result<bool>> DeleteAsync(Guid id, Guid userId, bool allowAdminBypass = false, CancellationToken cancellationToken = default)
     {
         var bookmark = await _bookmarkRepository.GetByIdAsync(id, cancellationToken);
         if (bookmark == null)
             return Result<bool>.Failure("Bookmark not found.");
-        if (bookmark.UserId != userId)
+        if (!allowAdminBypass && bookmark.UserId != userId)
             return Result<bool>.Failure("You can only delete your own bookmark.");
 
         await _bookmarkRepository.DeleteAsync(bookmark, cancellationToken);
@@ -86,6 +86,27 @@ public class BookmarkService : IBookmarkService
     {
         var list = await _bookmarkRepository.GetAllAsync(cancellationToken);
         return list.Select(ToResponse).ToList();
+    }
+
+    public async Task<IReadOnlyList<AdminBookmarkResponse>> GetAllBookmarksWithDetailsAsync(CancellationToken cancellationToken = default)
+    {
+        var list = await _bookmarkRepository.GetAllWithDetailsAsync(cancellationToken);
+        return list.Select(ToAdminResponse).ToList();
+    }
+
+    private static AdminBookmarkResponse ToAdminResponse(Bookmark b)
+    {
+        return new AdminBookmarkResponse
+        {
+            Id = b.Id,
+            VideoId = b.VideoId,
+            UserId = b.UserId,
+            VideoTitle = b.Video?.Title ?? "",
+            UserName = b.User?.Email ?? b.User?.UserName ?? b.UserId.ToString("N")[..8],
+            TimestampSeconds = b.TimestampSeconds,
+            Title = b.Title,
+            CreatedAt = b.CreatedAt
+        };
     }
 
     private static BookmarkResponse ToResponse(Bookmark b)

@@ -114,6 +114,23 @@ public class AuthenticatedApiClient
         }
     }
 
+    public async Task UpdateAnnotationAsync(Guid id, UpdateAnnotationRequest req, CancellationToken cancellationToken = default)
+    {
+        var token = _tokenStorage.GetAccessToken();
+        if (string.IsNullOrEmpty(token))
+            throw new InvalidOperationException("Not signed in. Please log in again.");
+        var client = _factory.CreateClient("VideoLabApi");
+        using var request = new HttpRequestMessage(HttpMethod.Put, $"Annotations/Update/{id}");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        request.Content = JsonContent.Create(req);
+        using var response = await client.SendAsync(request, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            var body = await response.Content.ReadAsStringAsync(cancellationToken);
+            throw new HttpRequestException($"Update annotation failed: {response.StatusCode}. {body}");
+        }
+    }
+
     public async Task<List<BookmarkItem>?> GetBookmarksByVideoAsync(Guid videoId, CancellationToken cancellationToken = default)
     {
         var token = _tokenStorage.GetAccessToken();
@@ -160,6 +177,23 @@ public class AuthenticatedApiClient
         {
             var body = await response.Content.ReadAsStringAsync(cancellationToken);
             throw new HttpRequestException($"Delete bookmark failed: {response.StatusCode}. {body}");
+        }
+    }
+
+    public async Task UpdateBookmarkAsync(Guid id, UpdateBookmarkRequest req, CancellationToken cancellationToken = default)
+    {
+        var token = _tokenStorage.GetAccessToken();
+        if (string.IsNullOrEmpty(token))
+            throw new InvalidOperationException("Not signed in. Please log in again.");
+        var client = _factory.CreateClient("VideoLabApi");
+        using var request = new HttpRequestMessage(HttpMethod.Put, $"Bookmarks/Update/{id}");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        request.Content = JsonContent.Create(req);
+        using var response = await client.SendAsync(request, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            var body = await response.Content.ReadAsStringAsync(cancellationToken);
+            throw new HttpRequestException($"Update bookmark failed: {response.StatusCode}. {body}");
         }
     }
 
@@ -255,6 +289,26 @@ public class AuthenticatedApiClient
         return JsonSerializer.Deserialize<List<AnnotationItem>>(json, JsonOptions);
     }
 
+    public async Task<List<AdminAnnotationItem>?> GetAdminAnnotationsWithDetailsAsync(CancellationToken cancellationToken = default)
+    {
+        var token = _tokenStorage.GetAccessToken();
+        if (string.IsNullOrEmpty(token))
+            throw new InvalidOperationException("Not signed in. Please log in again.");
+
+        var client = _factory.CreateClient("VideoLabApi");
+        using var request = new HttpRequestMessage(HttpMethod.Get, "Admin/GetAnnotationsWithDetails");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        using var response = await client.SendAsync(request, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            var body = await response.Content.ReadAsStringAsync(cancellationToken);
+            throw new HttpRequestException($"Admin annotations failed: {response.StatusCode}. {body}");
+        }
+
+        var json = await response.Content.ReadAsStringAsync(cancellationToken);
+        return JsonSerializer.Deserialize<List<AdminAnnotationItem>>(json, JsonOptions);
+    }
+
     public async Task<List<BookmarkItem>?> GetAdminBookmarksAsync(CancellationToken cancellationToken = default)
     {
         var token = _tokenStorage.GetAccessToken();
@@ -273,5 +327,84 @@ public class AuthenticatedApiClient
 
         var json = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<List<BookmarkItem>>(json, JsonOptions);
+    }
+
+    public async Task<List<AdminBookmarkItem>?> GetAdminBookmarksWithDetailsAsync(CancellationToken cancellationToken = default)
+    {
+        var token = _tokenStorage.GetAccessToken();
+        if (string.IsNullOrEmpty(token))
+            throw new InvalidOperationException("Not signed in. Please log in again.");
+
+        var client = _factory.CreateClient("VideoLabApi");
+        using var request = new HttpRequestMessage(HttpMethod.Get, "Admin/GetBookmarksWithDetails");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        using var response = await client.SendAsync(request, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            var body = await response.Content.ReadAsStringAsync(cancellationToken);
+            throw new HttpRequestException($"Admin bookmarks failed: {response.StatusCode}. {body}");
+        }
+
+        var json = await response.Content.ReadAsStringAsync(cancellationToken);
+        return JsonSerializer.Deserialize<List<AdminBookmarkItem>>(json, JsonOptions);
+    }
+
+    public async Task<AdminStatsItem?> GetAdminStatsAsync(CancellationToken cancellationToken = default)
+    {
+        var token = _tokenStorage.GetAccessToken();
+        if (string.IsNullOrEmpty(token))
+            throw new InvalidOperationException("Not signed in. Please log in again.");
+
+        var client = _factory.CreateClient("VideoLabApi");
+        using var request = new HttpRequestMessage(HttpMethod.Get, "Admin/GetStats");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        using var response = await client.SendAsync(request, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            var body = await response.Content.ReadAsStringAsync(cancellationToken);
+            throw new HttpRequestException($"Admin stats failed: {response.StatusCode}. {body}");
+        }
+
+        var json = await response.Content.ReadAsStringAsync(cancellationToken);
+        return JsonSerializer.Deserialize<AdminStatsItem>(json, JsonOptions);
+    }
+
+    public async Task<List<RoleItem>?> GetAdminRolesAsync(CancellationToken cancellationToken = default)
+    {
+        var token = _tokenStorage.GetAccessToken();
+        if (string.IsNullOrEmpty(token))
+            throw new InvalidOperationException("Not signed in. Please log in again.");
+
+        var client = _factory.CreateClient("VideoLabApi");
+        using var request = new HttpRequestMessage(HttpMethod.Get, "Admin/GetRoles");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        using var response = await client.SendAsync(request, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            var body = await response.Content.ReadAsStringAsync(cancellationToken);
+            throw new HttpRequestException($"Admin roles failed: {response.StatusCode}. {body}");
+        }
+
+        var json = await response.Content.ReadAsStringAsync(cancellationToken);
+        return JsonSerializer.Deserialize<List<RoleItem>>(json, JsonOptions);
+    }
+
+    public async Task CreateUserAsync(string email, string password, string roleName, CancellationToken cancellationToken = default)
+    {
+        var token = _tokenStorage.GetAccessToken();
+        if (string.IsNullOrEmpty(token))
+            throw new InvalidOperationException("Not signed in. Please log in again.");
+
+        var client = _factory.CreateClient("VideoLabApi");
+        using var request = new HttpRequestMessage(HttpMethod.Post, "Admin/CreateUser");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        request.Content = JsonContent.Create(new { email, password, roleName });
+
+        using var response = await client.SendAsync(request, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            var body = await response.Content.ReadAsStringAsync(cancellationToken);
+            throw new HttpRequestException($"Create user failed: {response.StatusCode}. {body}");
+        }
     }
 }

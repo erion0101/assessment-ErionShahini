@@ -83,7 +83,7 @@
         isLoading = true;
         try
         {
-            var apiBaseUrl = Configuration["ApiSettings:BaseUrl"] ?? "";
+            var apiBaseUrl = Configuration["ApiSettings:BrowserBaseUrl"] ?? Configuration["ApiSettings:BaseUrl"] ?? "";
             var result = await JS.InvokeAsync<AuthJsResult>("registerFromBrowser", apiBaseUrl, registerRequest.Email, registerRequest.Password);
             if (!result.Success || string.IsNullOrEmpty(result.AccessToken))
             {

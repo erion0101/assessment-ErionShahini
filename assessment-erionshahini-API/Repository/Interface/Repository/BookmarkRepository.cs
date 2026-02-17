@@ -61,4 +61,13 @@ public class BookmarkRepository : IBookmarkRepository
             .OrderByDescending(b => b.CreatedAt)
             .ToListAsync(cancellationToken);
     }
+
+    public async Task<IReadOnlyList<Bookmark>> GetAllWithDetailsAsync(CancellationToken cancellationToken = default)
+    {
+        return await _context.Bookmarks
+            .Include(b => b.Video)
+            .Include(b => b.User)
+            .OrderByDescending(b => b.CreatedAt)
+            .ToListAsync(cancellationToken);
+    }
 }

@@ -7,9 +7,51 @@
 
 <PageTitle>Admin - Video Lab</PageTitle>
 
-<div class="vl-page">
-    <h1>All Videos</h1>
+<div class="vl-page vl-admin-dashboard">
+    <h1 class="vl-admin-title">Admin Dashboard</h1>
     <p class="vl-text-muted">Manage and preview videos uploaded by users.</p>
+    <div class="vl-admin-links">
+        <a href="/admin/create-user" class="vl-admin-create-user-link">
+            <span class="oi oi-plus" aria-hidden="true"></span>
+            Create User
+        </a>
+        <a href="/admin/annotations" class="vl-admin-create-user-link">
+            <span class="oi oi-comment-square" aria-hidden="true"></span>
+            Annotations
+        </a>
+        <a href="/admin/bookmarks" class="vl-admin-create-user-link">
+            <span class="oi oi-bookmark" aria-hidden="true"></span>
+            Bookmarks
+        </a>
+    </div>
+
+    @if (stats != null)
+    {
+        <div class="vl-stats-grid">
+            <div class="vl-stat-card vl-stat-card-1">
+                <span class="vl-stat-icon" aria-hidden="true">📹</span>
+                <span class="vl-stat-value">@stats.Videos</span>
+                <span class="vl-stat-label">Videos</span>
+            </div>
+            <div class="vl-stat-card vl-stat-card-2">
+                <span class="vl-stat-icon" aria-hidden="true">🔖</span>
+                <span class="vl-stat-value">@stats.Bookmarks</span>
+                <span class="vl-stat-label">Bookmarks</span>
+            </div>
+            <div class="vl-stat-card vl-stat-card-3">
+                <span class="vl-stat-icon" aria-hidden="true">📝</span>
+                <span class="vl-stat-value">@stats.Annotations</span>
+                <span class="vl-stat-label">Annotations</span>
+            </div>
+            <div class="vl-stat-card vl-stat-card-4">
+                <span class="vl-stat-icon" aria-hidden="true">👥</span>
+                <span class="vl-stat-value">@stats.Users</span>
+                <span class="vl-stat-label">Users</span>
+            </div>
+        </div>
+    }
+
+    <h2 class="vl-section-title">All Videos</h2>
     @if (error != null)
     {
         <div class="vl-alert vl-alert-error">@error</div>
@@ -17,7 +59,12 @@
 
     @if (loading)
     {
-        <p class="vl-text-muted" style="margin-top: 1rem;">Loading admin data…</p>
+        <div class="vl-admin-loading">
+            <div class="vl-admin-loading-dots">
+                <span></span><span></span><span></span>
+            </div>
+            <p class="vl-text-muted">Loading admin data…</p>
+        </div>
     }
     else
     {
@@ -30,9 +77,9 @@
         else
         {
             <div class="vl-video-grid">
-                @foreach (var v in videos.OrderByDescending(x => x.UploadedAt))
+                @foreach (var (v, idx) in videos.OrderByDescending(x => x.UploadedAt).Select((v, i) => (v, i)))
                 {
-                    <article class="vl-card vl-video-card">
+                    <article class="vl-card vl-video-card vl-video-card-animated" style="--vl-card-delay: @(Math.Min(idx, 12) * 0.04)s">
                         <a href="/admin/watch/@v.Id" class="vl-thumb-link" title="Open video">
                             <video class="vl-thumb-video" preload="metadata" muted playsinline src="@GetPlayableUrl(v)"></video>
                         </a>
@@ -56,6 +103,7 @@
 
     private readonly List<VideoItem> videos = new();
     private readonly Dictionary<Guid, string> streamTokens = new();
+    private AdminStatsItem? stats;
     private bool loading = true;
     private string? error;
 
@@ -64,9 +112,11 @@
         try
         {
             var videosTask = Api.GetAdminVideosAsync();
-            await Task.WhenAll(videosTask);
+            var statsTask = Api.GetAdminStatsAsync();
+            await Task.WhenAll(videosTask, statsTask);
             videos.Clear();
-            videos.AddRange(videosTask.Result ?? Enumerable.Empty<VideoItem>());
+            videos.AddRange(await videosTask ?? Enumerable.Empty<VideoItem>());
+            stats = await statsTask;
             streamTokens.Clear();
             foreach (var v in videos)
             {
@@ -124,22 +174,154 @@
 }
 
 <style>
+    @@keyframes vl-fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(16px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @@keyframes vl-scaleIn {
+        from {
+            opacity: 0;
+            transform: scale(0.95);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+
+    .vl-page.vl-admin-dashboard {
+        max-width: 100%;
+        width: 100%;
+    }
+
+    .vl-admin-title {
+        animation: vl-fadeInUp 0.5s ease-out;
+    }
+
+    .vl-page.vl-admin-dashboard .vl-text-muted {
+        animation: vl-fadeInUp 0.5s ease-out 0.1s both;
+    }
+
+    .vl-admin-links {
+        display: flex;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+        margin-top: 0.5rem;
+    }
+
+    .vl-admin-create-user-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        background: var(--vl-accent);
+        color: white;
+        font-weight: 600;
+        border-radius: var(--vl-radius-sm);
+        text-decoration: none;
+        font-size: 0.95rem;
+        margin-top: 0.5rem;
+        transition: background 0.2s ease, transform 0.2s ease;
+    }
+
+    .vl-admin-create-user-link:hover {
+        background: var(--vl-accent-hover);
+        transform: translateY(-1px);
+    }
+
+    .vl-stats-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1.25rem;
+        margin: 1.5rem 0 2rem;
+    }
+
+    .vl-stat-card {
+        background: var(--vl-card);
+        border: 1px solid var(--vl-border);
+        border-radius: var(--vl-radius);
+        padding: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        box-shadow: var(--vl-shadow);
+        transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.2s ease;
+    }
+
+    .vl-stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 24px -8px rgba(15, 23, 42, 0.12);
+        border-color: var(--vl-accent-muted);
+    }
+
+    .vl-stat-card-1 { animation: vl-scaleIn 0.5s ease-out 0.1s both; }
+    .vl-stat-card-2 { animation: vl-scaleIn 0.5s ease-out 0.18s both; }
+    .vl-stat-card-3 { animation: vl-scaleIn 0.5s ease-out 0.26s both; }
+    .vl-stat-card-4 { animation: vl-scaleIn 0.5s ease-out 0.34s both; }
+
+    .vl-stat-icon {
+        font-size: 1.75rem;
+        line-height: 1;
+        opacity: 0.9;
+    }
+
+    .vl-stat-value {
+        font-size: 2.25rem;
+        font-weight: 800;
+        color: var(--vl-text);
+        line-height: 1.2;
+    }
+
+    .vl-stat-label {
+        font-size: 0.9rem;
+        color: var(--vl-text-muted);
+        font-weight: 500;
+    }
+
+    .vl-section-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        margin: 1.5rem 0 0.75rem;
+        animation: vl-fadeInUp 0.5s ease-out 0.2s both;
+    }
+
     .vl-empty-card {
         margin-top: 1rem;
-        padding: 1rem;
+        padding: 1.5rem;
+        animation: vl-fadeInUp 0.4s ease-out;
     }
 
     .vl-video-grid {
         margin-top: 1rem;
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-        gap: 1rem;
+        gap: 1.25rem;
+        margin-bottom: 100px;
     }
 
     .vl-video-card {
         overflow: hidden;
         display: grid;
         grid-template-rows: auto 1fr;
+        border-radius: var(--vl-radius);
+        transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+
+    .vl-video-card-animated {
+        animation: vl-fadeInUp 0.5s ease-out both;
+        animation-delay: var(--vl-card-delay, 0s);
+    }
+
+    .vl-video-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 24px -8px rgba(15, 23, 42, 0.15);
     }
 
     .vl-thumb-link {
@@ -147,6 +329,12 @@
         aspect-ratio: 1 / 1;
         background: #000;
         text-decoration: none;
+        overflow: hidden;
+        transition: opacity 0.2s ease;
+    }
+
+    .vl-thumb-link:hover {
+        opacity: 0.92;
     }
 
     .vl-thumb-video {
@@ -155,10 +343,15 @@
         display: block;
         object-fit: cover;
         background: #000;
+        transition: transform 0.35s ease;
+    }
+
+    .vl-video-card:hover .vl-thumb-video {
+        transform: scale(1.04);
     }
 
     .vl-video-card-body {
-        padding: 0.75rem;
+        padding: 0.875rem;
         display: grid;
         gap: 0.25rem;
     }
@@ -169,9 +362,11 @@
         line-height: 1.35;
         color: var(--vl-text);
         text-decoration: none;
+        transition: color 0.2s ease;
     }
 
     .vl-video-title:hover {
+        color: var(--vl-accent);
         text-decoration: underline;
     }
 
@@ -186,4 +381,46 @@
         font-size: 0.82rem;
         color: var(--vl-text-muted);
     }
+
+    @@media (max-width: 900px) {
+        .vl-stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    @@media (max-width: 520px) {
+        .vl-stats-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @@keyframes vl-loadingBounce {
+        0%, 80%, 100% { transform: scale(0.6); opacity: 0.5; }
+        40% { transform: scale(1); opacity: 1; }
+    }
+
+    .vl-admin-loading {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+        padding: 3rem 0;
+    }
+
+    .vl-admin-loading-dots {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .vl-admin-loading-dots span {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--vl-accent);
+        animation: vl-loadingBounce 1.2s ease-in-out infinite both;
+    }
+
+    .vl-admin-loading-dots span:nth-child(1) { animation-delay: 0s; }
+    .vl-admin-loading-dots span:nth-child(2) { animation-delay: 0.15s; }
+    .vl-admin-loading-dots span:nth-child(3) { animation-delay: 0.3s; }
 </style>

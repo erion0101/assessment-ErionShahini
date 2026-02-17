@@ -34,4 +34,9 @@ public class RoleRepository : IRoleRepository
         return await _context.Roles
             .FirstOrDefaultAsync(r => r.NormalizedName == normalizedName, cancellationToken);
     }
+
+    public async Task<IReadOnlyList<IdentityRole<Guid>>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        return await _context.Roles.OrderBy(r => r.Name).ToListAsync(cancellationToken);
+    }
 }

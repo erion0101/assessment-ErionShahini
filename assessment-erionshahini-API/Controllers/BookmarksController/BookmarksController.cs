@@ -73,21 +73,23 @@ public class BookmarksController : ControllerBase
     {
         var userId = GetCurrentUserId();
         if (userId == null) return Unauthorized();
-        var result = await _bookmarkService.UpdateAsync(id, userId.Value, request, cancellationToken);
+        var allowAdminBypass = User.IsInRole("Admin");
+        var result = await _bookmarkService.UpdateAsync(id, userId.Value, request, allowAdminBypass, cancellationToken);
         if (!result.IsSuccess)
             return result.Error == "Bookmark not found." ? NotFound() : BadRequest(result.Error);
 
         return Ok(result.Data);
     }
 
-    /// <summary>Delete bookmark (only owner).</summary>
+    /// <summary>Delete bookmark (owner or admin).</summary>
     [HttpDelete]
     [Route("[action]/{id:guid}")]
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {
         var userId = GetCurrentUserId();
         if (userId == null) return Unauthorized();
-        var result = await _bookmarkService.DeleteAsync(id, userId.Value, cancellationToken);
+        var allowAdminBypass = User.IsInRole("Admin");
+        var result = await _bookmarkService.DeleteAsync(id, userId.Value, allowAdminBypass, cancellationToken);
         if (!result.IsSuccess)
             return result.Error == "Bookmark not found." ? NotFound() : BadRequest(result.Error);
 

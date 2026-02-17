@@ -5,6 +5,7 @@ namespace Repository.Interface;
 
 public interface IUserRepository
 {
+    Task<int> GetCountAsync(CancellationToken cancellationToken = default);
     Task<User?> FindByIdAsync(Guid id, CancellationToken cancellationToken = default);
     Task<User?> FindByEmailAsync(string email, CancellationToken cancellationToken = default);
     Task<User?> FindByRefreshTokenAsync(string refreshToken, CancellationToken cancellationToken = default);

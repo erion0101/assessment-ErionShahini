@@ -29,6 +29,10 @@ public class VideoService : IVideoService
         var extension = Path.GetExtension(file.FileName);
         if (string.IsNullOrEmpty(extension))
             extension = ".bin";
+
+        var allowedExtensions = new[] { ".mp4", ".webm", ".mov", ".avi" };
+        if (!allowedExtensions.Contains(extension.ToLowerInvariant()))
+            return Result<VideoResponse>.Failure("Only video files (.mp4, .webm, .mov, .avi) are allowed.");
         var relativePath = Path.Combine(UploadSubPath, userId.ToString(), $"{id}{extension}").Replace('\\', '/');
         var fullPath = Path.Combine(_env.ContentRootPath, relativePath);
 

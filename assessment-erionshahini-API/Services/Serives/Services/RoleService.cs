@@ -28,4 +28,9 @@ public class RoleService : IRoleService
     {
         return await _roleRepository.GetByNameAsync(name, cancellationToken);
     }
+
+    public async Task<IReadOnlyList<IdentityRole<Guid>>> GetAllRolesAsync(CancellationToken cancellationToken = default)
+    {
+        return await _roleRepository.GetAllAsync(cancellationToken);
+    }
 }

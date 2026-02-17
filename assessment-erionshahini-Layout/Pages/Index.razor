@@ -62,7 +62,7 @@
         errorMessage = null;
         try
         {
-            var apiBaseUrl = Configuration["ApiSettings:BaseUrl"] ?? "";
+            var apiBaseUrl = Configuration["ApiSettings:BrowserBaseUrl"] ?? Configuration["ApiSettings:BaseUrl"] ?? "";
             var result = await JS.InvokeAsync<LoginJsResult>("loginFromBrowser", apiBaseUrl, loginRequest.Email, loginRequest.Password);
             if (result.Success && !string.IsNullOrEmpty(result.AccessToken))
             {

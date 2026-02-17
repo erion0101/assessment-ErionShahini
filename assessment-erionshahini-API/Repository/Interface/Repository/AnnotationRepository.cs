@@ -61,4 +61,13 @@ public class AnnotationRepository : IAnnotationRepository
             .OrderByDescending(a => a.CreatedAt)
             .ToListAsync(cancellationToken);
     }
+
+    public async Task<IReadOnlyList<Annotation>> GetAllWithDetailsAsync(CancellationToken cancellationToken = default)
+    {
+        return await _context.Annotations
+            .Include(a => a.Video)
+            .Include(a => a.User)
+            .OrderByDescending(a => a.CreatedAt)
+            .ToListAsync(cancellationToken);
+    }
 }

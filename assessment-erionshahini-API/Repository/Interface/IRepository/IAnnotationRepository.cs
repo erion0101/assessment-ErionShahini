@@ -11,4 +11,5 @@ public interface IAnnotationRepository
     Task UpdateAsync(Annotation annotation, CancellationToken cancellationToken = default);
     Task DeleteAsync(Annotation annotation, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<Annotation>> GetAllAsync(CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<Annotation>> GetAllWithDetailsAsync(CancellationToken cancellationToken = default);
 }

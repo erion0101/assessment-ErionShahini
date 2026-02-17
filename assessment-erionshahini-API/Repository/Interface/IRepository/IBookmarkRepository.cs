@@ -11,4 +11,5 @@ public interface IBookmarkRepository
     Task UpdateAsync(Bookmark bookmark, CancellationToken cancellationToken = default);
     Task DeleteAsync(Bookmark bookmark, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<Bookmark>> GetAllAsync(CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<Bookmark>> GetAllWithDetailsAsync(CancellationToken cancellationToken = default);
 }

@@ -13,9 +13,21 @@
     </AuthorizeView>
     <AuthorizeView Roles="Admin">
         <Authorized>
-            <NavLink class="vl-nav-item" href="/admin">
+            <NavLink class="vl-nav-item" href="/admin" Match="NavLinkMatch.Prefix">
                 <span class="oi oi-cog" aria-hidden="true"></span>
                 <span>Admin</span>
+            </NavLink>
+            <NavLink class="vl-nav-item" href="/admin/create-user">
+                <span class="oi oi-plus" aria-hidden="true"></span>
+                <span>Create User</span>
+            </NavLink>
+            <NavLink class="vl-nav-item" href="/admin/annotations">
+                <span class="oi oi-comment-square" aria-hidden="true"></span>
+                <span>Annotations</span>
+            </NavLink>
+            <NavLink class="vl-nav-item" href="/admin/bookmarks">
+                <span class="oi oi-bookmark" aria-hidden="true"></span>
+                <span>Bookmarks</span>
             </NavLink>
         </Authorized>
     </AuthorizeView>
@@ -40,7 +52,7 @@
 
     private async Task Logout()
     {
-        var apiBaseUrl = Configuration["ApiSettings:BaseUrl"];
+        var apiBaseUrl = Configuration["ApiSettings:BrowserBaseUrl"] ?? Configuration["ApiSettings:BaseUrl"];
         try { await JS.InvokeVoidAsync("logoutClearCookie", apiBaseUrl); }
         catch { }
         await AuthService.LogoutAsync();

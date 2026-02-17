@@ -20,7 +20,7 @@
 <body>
     <component type="typeof(App)" render-mode="Server" />
 
-    <script>window.__apiBaseUrl = '@(Config["ApiSettings:BaseUrl"]?.TrimEnd('/') ?? "")';</script>
+    <script>window.__apiBaseUrl = '@((Config["ApiSettings:BrowserBaseUrl"] ?? Config["ApiSettings:BaseUrl"])?.TrimEnd('/') ?? "")';</script>
     <script src="js/authLogout.js"></script>
     <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
     <script src="js/videoTime.js"></script>

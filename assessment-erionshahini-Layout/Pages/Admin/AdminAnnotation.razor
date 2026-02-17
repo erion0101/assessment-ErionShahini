@@ -1,0 +1,240 @@
+@page "/admin/annotations"
+@attribute [Authorize(Roles = "Admin")]
+@using assessment_erionshahini_Layout.Data
+@using assessment_erionshahini_Layout.Service
+@using System.Linq
+@using Microsoft.JSInterop
+
+<PageTitle>Annotations - Admin - Video Lab</PageTitle>
+
+<div class="vl-page vl-admin-annotations">
+    <div class="vl-admin-ann-header">
+        <a href="/admin" class="vl-back">← Admin Dashboard</a>
+        <h1>All Annotations</h1>
+        <p class="vl-text-muted">Manage annotations across all videos.</p>
+    </div>
+
+    @if (error != null)
+    {
+        <div class="vl-alert vl-alert-error" role="alert">@error</div>
+    }
+
+    @if (loading)
+    {
+        <p class="vl-text-muted">Loading annotations…</p>
+    }
+    else if (annotations.Count == 0)
+    {
+        <div class="vl-card vl-empty-card">
+            <p class="vl-text-muted">No annotations in the system.</p>
+        </div>
+    }
+    else
+    {
+        <div class="vl-table-wrap">
+            <table class="vl-admin-table">
+                <thead>
+                    <tr>
+                        <th>Title of Video</th>
+                        <th>User Name</th>
+                        <th>Time (sec)</th>
+                        <th>Description</th>
+                        <th>Created At</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var a in annotations)
+                    {
+                        var annId = a.Id;
+                        var isEditing = editingId == annId;
+                        <tr class="@(isEditing ? "vl-row-editing" : "")">
+                            <td><a href="/admin/watch/@a.VideoId" class="vl-link-video">@a.VideoTitle</a></td>
+                            <td>@a.UserName</td>
+                            @if (isEditing)
+                            {
+                                <td>
+                                    <input type="number" step="0.1" min="0" @bind="_editTime" class="vl-input vl-input-sm" />
+                                </td>
+                                <td colspan="2">
+                                    <div class="vl-inline-edit">
+                                        <input type="text" @bind="_editDescription" class="vl-input vl-input-desc" maxlength="1000" placeholder="Description" />
+                                        <button type="button" class="vl-btn vl-btn-sm vl-btn-primary" disabled="@saving" @onclick="@(() => SaveAnnotation(annId))">Save</button>
+                                        <button type="button" class="vl-btn vl-btn-sm vl-btn-secondary" disabled="@saving" @onclick="CancelEdit">Cancel</button>
+                                    </div>
+                                </td>
+                            }
+                            else
+                            {
+                                <td>@a.TimestampSeconds.ToString("0.##")</td>
+                                <td class="vl-desc-cell">@a.Description</td>
+                                <td>@FormatDate(a.CreatedAt)</td>
+                            }
+                            @if (!isEditing)
+                            {
+                                <td>
+                                    <div class="vl-action-btns">
+                                        <button type="button" class="vl-btn vl-btn-icon vl-btn-edit" title="Edit" @onclick="@(() => StartEdit(a))">✎</button>
+                                        <button type="button" class="vl-btn vl-btn-icon vl-btn-remove" title="Delete" @onclick="@(() => ConfirmDelete(annId))">×</button>
+                                    </div>
+                                </td>
+                            }
+                            else if (isEditing)
+                            {
+                                <td></td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@code {
+    [Inject] private AuthenticatedApiClient Api { get; set; } = null!;
+    [Inject] private IJSRuntime JS { get; set; } = null!;
+
+    private readonly List<AdminAnnotationItem> annotations = new();
+    private Guid? editingId;
+    private double _editTime;
+    private string _editDescription = string.Empty;
+    private bool loading = true;
+    private bool saving;
+    private string? error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        loading = true;
+        error = null;
+        try
+        {
+            var list = await Api.GetAdminAnnotationsWithDetailsAsync() ?? new List<AdminAnnotationItem>();
+            annotations.Clear();
+            annotations.AddRange(list);
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    private void StartEdit(AdminAnnotationItem a)
+    {
+        editingId = a.Id;
+        _editTime = a.TimestampSeconds;
+        _editDescription = a.Description;
+    }
+
+    private void CancelEdit()
+    {
+        editingId = null;
+    }
+
+    private async Task SaveAnnotation(Guid id)
+    {
+        saving = true;
+        error = null;
+        try
+        {
+            await Api.UpdateAnnotationAsync(id, new UpdateAnnotationRequest
+            {
+                TimestampSeconds = _editTime,
+                Description = _editDescription.Trim()
+            });
+            var idx = annotations.FindIndex(x => x.Id == id);
+            if (idx >= 0)
+            {
+                annotations[idx].TimestampSeconds = _editTime;
+                annotations[idx].Description = _editDescription.Trim();
+            }
+            editingId = null;
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            saving = false;
+        }
+    }
+
+    private async Task ConfirmDelete(Guid id)
+    {
+        var confirmed = await JS.InvokeAsync<bool>("confirm", "Delete this annotation?");
+        if (!confirmed) return;
+
+        error = null;
+        try
+        {
+            await Api.DeleteAnnotationAsync(id);
+            annotations.RemoveAll(x => x.Id == id);
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+    }
+
+    private static string FormatDate(DateTime dt)
+    {
+        return dt.ToString("yyyy-MM-dd");
+    }
+}
+
+<style>
+    .vl-page.vl-admin-annotations {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .vl-admin-ann-header { margin-bottom: 1.5rem; }
+    .vl-back { display: inline-block; margin-bottom: 0.5rem; color: var(--vl-accent); font-weight: 500; }
+    .vl-back:hover { text-decoration: underline; }
+
+    .vl-table-wrap {
+        overflow-x: auto;
+        margin-left: auto;
+        margin-right: auto;
+        max-width: min(1200px, 100%);
+    }
+    .vl-admin-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    .vl-admin-table th, .vl-admin-table td { padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--vl-border); }
+    .vl-admin-table th { background: var(--vl-bg); font-weight: 600; color: var(--vl-text); }
+    .vl-admin-table td { vertical-align: top; }
+    .vl-desc-cell { max-width: 280px; overflow: hidden; text-overflow: ellipsis; }
+    .vl-link-video { color: var(--vl-accent); text-decoration: none; }
+    .vl-link-video:hover { text-decoration: underline; }
+    .vl-action-btns { display: flex; gap: 0.5rem; }
+    .vl-btn { padding: 0.5rem 1rem; font-weight: 600; border-radius: var(--vl-radius-sm); cursor: pointer; border: none; font-size: 0.9rem; }
+    .vl-btn-sm { padding: 0.4rem 0.75rem; font-size: 0.85rem; }
+    .vl-btn-icon { padding: 0.25rem 0.5rem; min-width: 2rem; }
+    .vl-btn-primary { background: var(--vl-accent); color: white; }
+    .vl-btn-primary:hover:not(:disabled) { background: var(--vl-accent-hover); }
+    .vl-btn-secondary { background: var(--vl-border); color: var(--vl-text); }
+    .vl-btn-secondary:hover { background: #d1d5db; }
+    .vl-btn-edit { background: #e0f2fe; color: #0369a1; }
+    .vl-btn-edit:hover { background: #bae6fd; }
+    .vl-btn-remove { background: #fee2e2; color: #991b1b; }
+    .vl-btn-remove:hover { background: #fecaca; }
+    .vl-inline-edit { display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end; }
+    .vl-inline-edit label { display: flex; flex-direction: column; gap: 0.25rem; }
+    .vl-inline-edit .vl-input-sm { width: 6rem; }
+    .vl-inline-edit .vl-input-wide,
+    .vl-inline-edit .vl-input-desc { width: 220px; min-width: 180px; }
+    .vl-edit-actions { display: flex; gap: 0.5rem; }
+    .vl-input { padding: 0.5rem 0.75rem; border: 1px solid var(--vl-border); border-radius: var(--vl-radius-sm); font-size: 0.9rem; }
+    .vl-empty-card { padding: 2rem; text-align: center; }
+    .vl-alert { padding: 0.75rem 1rem; border-radius: var(--vl-radius-sm); margin-bottom: 1rem; }
+    .vl-alert-error { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; }
+</style>

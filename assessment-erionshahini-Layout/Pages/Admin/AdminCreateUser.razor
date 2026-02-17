@@ -1,0 +1,209 @@
+@page "/admin/create-user"
+@attribute [Authorize(Roles = "Admin")]
+@using assessment_erionshahini_Layout.Data
+@using assessment_erionshahini_Layout.Service
+@using Microsoft.AspNetCore.Components.Forms
+
+<PageTitle>Create User - Admin - Video Lab</PageTitle>
+
+<div class="vl-page vl-admin-create-user">
+    <div class="vl-create-user-header">
+        <a href="/admin" class="vl-back">← Admin Dashboard</a>
+        <h1>Create User</h1>
+        <p class="vl-text-muted">Create a new user and assign a role.</p>
+    </div>
+
+    @if (successMessage != null)
+    {
+        <div class="vl-alert vl-alert-success" role="alert">
+            <strong>@successMessage</strong>
+            <a href="#" @onclick="ClearSuccess" @onclick:preventDefault>Create another</a>
+            or
+            <a href="/admin">Back to dashboard</a>.
+        </div>
+    }
+    else if (error != null)
+    {
+        <div class="vl-alert vl-alert-error" role="alert">@error</div>
+    }
+
+    <div class="vl-card vl-create-user-card">
+        @if (roles == null)
+        {
+            <p class="vl-text-muted">Loading roles…</p>
+        }
+        else if (roles.Count == 0)
+        {
+            <p class="vl-text-muted">No roles found. Ensure User and Admin roles exist in the database.</p>
+        }
+        else
+        {
+            <EditForm Model="model" OnValidSubmit="HandleSubmit" FormName="CreateUserForm">
+                <DataAnnotationsValidator />
+                <ValidationSummary class="vl-validation-summary" />
+
+                <div class="vl-field">
+                    <label class="vl-label" for="email">Email</label>
+                    <InputText id="email" @bind-Value="model.Email" class="vl-input" type="email" placeholder="user@example.com" />
+                </div>
+
+                <div class="vl-field">
+                    <label class="vl-label" for="password">Password</label>
+                    <InputText id="password" @bind-Value="model.Password" class="vl-input" type="password" placeholder="At least 6 characters" />
+                </div>
+
+                <div class="vl-field">
+                    <label class="vl-label" for="confirm">Confirm password</label>
+                    <InputText id="confirm" @bind-Value="confirmPassword" class="vl-input" type="password" placeholder="Repeat password" />
+                </div>
+
+                <div class="vl-field">
+                    <label class="vl-label" for="role">Role</label>
+                    <InputSelect id="role" @bind-Value="model.RoleName" class="vl-input vl-select">
+                        @foreach (var r in roles)
+                        {
+                            <option value="@r.Name">@r.Name</option>
+                        }
+                    </InputSelect>
+                </div>
+
+                <div class="vl-create-user-actions">
+                    <button type="submit" class="vl-btn vl-btn-primary" disabled="@isSubmitting">
+                        @if (isSubmitting)
+                        {
+                            <span class="vl-spinner" aria-hidden="true"></span>
+                            <span>Creating…</span>
+                        }
+                        else
+                        {
+                            <span class="oi oi-plus" aria-hidden="true"></span>
+                            <span>Create user</span>
+                        }
+                    </button>
+                    <a href="/admin" class="vl-btn vl-btn-secondary">Cancel</a>
+                </div>
+            </EditForm>
+        }
+    </div>
+</div>
+
+@code {
+    [Inject] private AuthenticatedApiClient Api { get; set; } = null!;
+    [Inject] private NavigationManager Navigation { get; set; } = null!;
+
+    private CreateUserModel model = new() { RoleName = "User" };
+    private string confirmPassword = string.Empty;
+    private List<RoleItem>? roles;
+    private string? error;
+    private string? successMessage;
+    private bool isSubmitting;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            roles = await Api.GetAdminRolesAsync() ?? new List<RoleItem>();
+            if (roles.Count > 0 && string.IsNullOrEmpty(model.RoleName))
+                model.RoleName = roles[0].Name;
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+    }
+
+    private async Task HandleSubmit()
+    {
+        error = null;
+        successMessage = null;
+
+        if (model.Password != confirmPassword)
+        {
+            error = "Passwords do not match.";
+            return;
+        }
+
+        isSubmitting = true;
+        try
+        {
+            await Api.CreateUserAsync(model.Email.Trim(), model.Password, model.RoleName ?? "User");
+            successMessage = $"User '{model.Email}' created successfully with role '{model.RoleName}'.";
+            model = new CreateUserModel { RoleName = model.RoleName };
+            confirmPassword = string.Empty;
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private void ClearSuccess()
+    {
+        successMessage = null;
+    }
+
+    private class CreateUserModel
+    {
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Email is required.")]
+        [System.ComponentModel.DataAnnotations.EmailAddress(ErrorMessage = "Invalid email address.")]
+        public string Email { get; set; } = string.Empty;
+
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Password is required.")]
+        [System.ComponentModel.DataAnnotations.MinLength(6, ErrorMessage = "Password must be at least 6 characters.")]
+        public string Password { get; set; } = string.Empty;
+
+        public string RoleName { get; set; } = "User";
+    }
+}
+
+<style>
+    .vl-page.vl-admin-create-user {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .vl-admin-create-user {
+        display: flex;
+        flex-direction: column;
+        min-height: calc(100vh - 12rem);
+        margin-bottom: 6rem;
+    }
+
+    .vl-create-user-header {
+        margin-bottom: 1.5rem;
+    }
+
+    .vl-create-user-card {
+        max-width: 480px;
+        width: 100%;
+        padding: 1.5rem;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .vl-back { display: inline-block; margin-bottom: 0.5rem; color: var(--vl-accent); font-weight: 500; }
+    .vl-back:hover { text-decoration: underline; }
+    .vl-field { margin-bottom: 1.25rem; }
+    .vl-label { display: block; font-weight: 500; margin-bottom: 0.375rem; color: var(--vl-text); }
+    .vl-input { width: 100%; padding: 0.625rem 0.875rem; border: 1px solid var(--vl-border); border-radius: var(--vl-radius-sm); font-size: 1rem; }
+    .vl-input:focus { border-color: var(--vl-accent); outline: none; }
+    .vl-select { cursor: pointer; }
+    .vl-validation-summary { margin-bottom: 1rem; font-size: 0.875rem; color: var(--vl-danger, #dc2626); }
+    .vl-create-user-actions { display: flex; gap: 0.75rem; margin-top: 1.5rem; flex-wrap: wrap; }
+    .vl-btn { padding: 0.625rem 1.25rem; font-weight: 600; border-radius: var(--vl-radius-sm); cursor: pointer; border: none; font-size: 1rem; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem; }
+    .vl-btn-primary { background: var(--vl-accent); color: white; }
+    .vl-btn-primary:hover:not(:disabled) { background: var(--vl-accent-hover); }
+    .vl-btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+    .vl-btn-secondary { background: var(--vl-border); color: var(--vl-text); }
+    .vl-btn-secondary:hover { background: #d1d5db; }
+    .vl-alert { padding: 0.75rem 1rem; border-radius: var(--vl-radius-sm); margin-bottom: 1rem; }
+    .vl-alert-success { background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; }
+    .vl-alert-success a { color: var(--vl-accent); font-weight: 500; }
+    .vl-alert-error { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; }
+    .vl-spinner { display: inline-block; width: 1rem; height: 1rem; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: vl-spin 0.7s linear infinite; }
+    @@keyframes vl-spin { to { transform: rotate(360deg); } }
+</style>

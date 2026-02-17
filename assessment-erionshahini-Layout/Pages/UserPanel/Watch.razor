@@ -91,10 +91,32 @@
                             {
                                 var bookTime = b.TimestampSeconds;
                                 var bookId = b.Id;
-                                <li class="vl-note-item">
-                                    <button type="button" class="vl-note-time vl-seek-btn" data-kind="bookmark" data-seek="@bookTime.ToString(System.Globalization.CultureInfo.InvariantCulture)" title="Jump to this moment">@FormatTime(bookTime)</button>
-                                    <span class="vl-note-text">@b.Title</span>
-                                    <button type="button" class="vl-btn vl-btn-icon vl-btn-remove" aria-label="Delete bookmark" @onclick="@(() => DeleteBookmark(bookId))" title="Remove">×</button>
+                                var isEditing = _editingBookmarkId == bookId;
+                                <li class="vl-note-item @(isEditing ? "vl-note-item-editing" : "")">
+                                    @if (isEditing)
+                                    {
+                                        <div class="vl-edit-form">
+                                            <input @bind="_editBookmarkTitle" class="vl-input vl-input-text vl-edit-input" placeholder="Title" aria-label="Bookmark title" />
+                                            <div class="vl-edit-row">
+                                                <label class="vl-add-form-time-wrap">
+                                                    <span class="vl-time-label">Time</span>
+                                                    <input type="number" step="0.1" min="0" @bind="_editBookmarkTime" class="vl-input vl-input-num" />
+                                                </label>
+                                                <button type="button" class="vl-btn vl-btn-sm vl-btn-secondary vl-btn-now" @onclick="@(() => UseCurrentTimeForEditBookmark())">Now</button>
+                                                <button type="button" class="vl-btn vl-btn-sm vl-btn-primary" disabled="@(string.IsNullOrWhiteSpace(_editBookmarkTitle))" @onclick="@(() => SaveBookmark(bookId))">Save</button>
+                                                <button type="button" class="vl-btn vl-btn-sm vl-btn-secondary" @onclick="CancelEditBookmark">Cancel</button>
+                                            </div>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <button type="button" class="vl-note-time vl-seek-btn" data-kind="bookmark" data-seek="@bookTime.ToString(System.Globalization.CultureInfo.InvariantCulture)" title="Jump to this moment">@FormatTime(bookTime)</button>
+                                        <span class="vl-note-text">@b.Title</span>
+                                        <div class="vl-note-actions">
+                                            <button type="button" class="vl-btn vl-btn-icon vl-btn-edit" aria-label="Edit bookmark" @onclick="@(() => StartEditBookmark(bookId, b))" title="Edit">✎</button>
+                                            <button type="button" class="vl-btn vl-btn-icon vl-btn-remove" aria-label="Delete bookmark" @onclick="@(() => DeleteBookmark(bookId))" title="Remove">×</button>
+                                        </div>
+                                    }
                                 </li>
                             }
                         </ul>
@@ -146,10 +168,32 @@
                             {
                                 var annTime = a.TimestampSeconds;
                                 var annId = a.Id;
-                                <li class="vl-note-item @(annId == _activeAnnotationId ? "is-active" : "")">
-                                    <button type="button" class="vl-note-time vl-seek-btn" data-kind="annotation" data-seek="@annTime.ToString(System.Globalization.CultureInfo.InvariantCulture)" title="Jump to this moment">@FormatTime(annTime)</button>
-                                    <span class="vl-note-text">@a.Description</span>
-                                    <button type="button" class="vl-btn vl-btn-icon vl-btn-remove" aria-label="Delete annotation" @onclick="@(() => DeleteAnnotation(annId))" title="Remove">×</button>
+                                var isEditing = _editingAnnotationId == annId;
+                                <li class="vl-note-item @(annId == _activeAnnotationId && !isEditing ? "is-active" : "") @(isEditing ? "vl-note-item-editing" : "")">
+                                    @if (isEditing)
+                                    {
+                                        <div class="vl-edit-form">
+                                            <input @bind="_editAnnotationDesc" class="vl-input vl-input-text vl-edit-input" placeholder="Description" aria-label="Annotation description" />
+                                            <div class="vl-edit-row">
+                                                <label class="vl-add-form-time-wrap">
+                                                    <span class="vl-time-label">Time</span>
+                                                    <input type="number" step="0.1" min="0" @bind="_editAnnotationTime" class="vl-input vl-input-num" />
+                                                </label>
+                                                <button type="button" class="vl-btn vl-btn-sm vl-btn-secondary vl-btn-now" @onclick="@(() => UseCurrentTimeForEditAnnotation())">Now</button>
+                                                <button type="button" class="vl-btn vl-btn-sm vl-btn-primary" disabled="@(string.IsNullOrWhiteSpace(_editAnnotationDesc))" @onclick="@(() => SaveAnnotation(annId))">Save</button>
+                                                <button type="button" class="vl-btn vl-btn-sm vl-btn-secondary" @onclick="CancelEditAnnotation">Cancel</button>
+                                            </div>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <button type="button" class="vl-note-time vl-seek-btn" data-kind="annotation" data-seek="@annTime.ToString(System.Globalization.CultureInfo.InvariantCulture)" title="Jump to this moment">@FormatTime(annTime)</button>
+                                        <span class="vl-note-text">@a.Description</span>
+                                        <div class="vl-note-actions">
+                                            <button type="button" class="vl-btn vl-btn-icon vl-btn-edit" aria-label="Edit annotation" @onclick="@(() => StartEditAnnotation(annId, a))" title="Edit">✎</button>
+                                            <button type="button" class="vl-btn vl-btn-icon vl-btn-remove" aria-label="Delete annotation" @onclick="@(() => DeleteAnnotation(annId))" title="Remove">×</button>
+                                        </div>
+                                    }
                                 </li>
                             }
                         </ul>
@@ -212,6 +256,13 @@
     private double _activeAnnotationTime;
     private bool _deleting;
     private bool _plyrInited;
+
+    private Guid? _editingAnnotationId;
+    private Guid? _editingBookmarkId;
+    private string _editAnnotationDesc = "";
+    private double _editAnnotationTime;
+    private string _editBookmarkTitle = "";
+    private double _editBookmarkTime;
 
     protected override async Task OnInitializedAsync()
     {
@@ -455,6 +506,50 @@
         }
     }
 
+    private void StartEditAnnotation(Guid annId, AnnotationItem a)
+    {
+        _editingAnnotationId = annId;
+        _editAnnotationDesc = a.Description ?? "";
+        _editAnnotationTime = a.TimestampSeconds;
+    }
+
+    private void CancelEditAnnotation()
+    {
+        _editingAnnotationId = null;
+    }
+
+    private async Task SaveAnnotation(Guid annId)
+    {
+        if (string.IsNullOrWhiteSpace(_editAnnotationDesc)) return;
+        try
+        {
+            error = null;
+            await Api.UpdateAnnotationAsync(annId, new UpdateAnnotationRequest
+            {
+                Description = _editAnnotationDesc.Trim(),
+                TimestampSeconds = Math.Max(0, _editAnnotationTime)
+            });
+            _editingAnnotationId = null;
+            await LoadNotesAsync();
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+    }
+
+    private async Task UseCurrentTimeForEditAnnotation()
+    {
+        try
+        {
+            var s = await JS.InvokeAsync<string>("videoPlayerGetCurrentTime", "vl-watch-video");
+            if (double.TryParse(s, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var t))
+                _editAnnotationTime = Math.Max(0, t);
+            StateHasChanged();
+        }
+        catch { }
+    }
+
     private async Task DeleteAnnotation(Guid annotationId)
     {
         try
@@ -488,6 +583,50 @@
         {
             error = ex.Message;
         }
+    }
+
+    private void StartEditBookmark(Guid bookId, BookmarkItem b)
+    {
+        _editingBookmarkId = bookId;
+        _editBookmarkTitle = b.Title ?? "";
+        _editBookmarkTime = b.TimestampSeconds;
+    }
+
+    private void CancelEditBookmark()
+    {
+        _editingBookmarkId = null;
+    }
+
+    private async Task SaveBookmark(Guid bookId)
+    {
+        if (string.IsNullOrWhiteSpace(_editBookmarkTitle)) return;
+        try
+        {
+            error = null;
+            await Api.UpdateBookmarkAsync(bookId, new UpdateBookmarkRequest
+            {
+                Title = _editBookmarkTitle.Trim(),
+                TimestampSeconds = Math.Max(0, _editBookmarkTime)
+            });
+            _editingBookmarkId = null;
+            await LoadNotesAsync();
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+    }
+
+    private async Task UseCurrentTimeForEditBookmark()
+    {
+        try
+        {
+            var s = await JS.InvokeAsync<string>("videoPlayerGetCurrentTime", "vl-watch-video");
+            if (double.TryParse(s, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var t))
+                _editBookmarkTime = Math.Max(0, t);
+            StateHasChanged();
+        }
+        catch { }
     }
 
     private async Task DeleteBookmark(Guid bookmarkId)
@@ -922,8 +1061,9 @@
     .vl-add-form-time-wrap .vl-input-num {
         width: 5rem;
     }
-    /* Action row buttons: Now + Add */
-    .vl-add-form-row-actions .vl-btn {
+    /* Action row buttons: Now + Add (and Edit form: Now + Save + Cancel) */
+    .vl-add-form-row-actions .vl-btn,
+    .vl-edit-row .vl-btn {
         padding: 0.5rem 1rem;
         font-size: 0.875rem;
         font-weight: 600;
@@ -936,35 +1076,52 @@
         gap: 0.35rem;
         transition: transform 0.18s ease, box-shadow 0.2s ease, background 0.2s ease, color 0.2s ease;
     }
-    .vl-add-form-row-actions .vl-btn:focus-visible {
+    .vl-add-form-row-actions .vl-btn:focus-visible,
+    .vl-edit-row .vl-btn:focus-visible {
         outline: none;
         box-shadow: 0 0 0 3px var(--vl-accent-muted);
     }
-    .vl-add-form-row-actions .vl-btn:active:not(:disabled) {
+    .vl-add-form-row-actions .vl-btn:active:not(:disabled),
+    .vl-edit-row .vl-btn:active:not(:disabled) {
         transform: scale(0.97);
     }
-    .vl-add-form-row-actions .vl-btn-sm.vl-btn-secondary.vl-btn-now {
+    .vl-add-form-row-actions .vl-btn-sm.vl-btn-secondary.vl-btn-now,
+    .vl-edit-row .vl-btn-sm.vl-btn-secondary.vl-btn-now {
         background: var(--vl-accent-muted);
         color: var(--vl-accent);
         border: 1px solid rgba(6, 182, 212, 0.35);
     }
-    .vl-add-form-row-actions .vl-btn-sm.vl-btn-secondary.vl-btn-now:hover:not(:disabled) {
+    .vl-add-form-row-actions .vl-btn-sm.vl-btn-secondary.vl-btn-now:hover:not(:disabled),
+    .vl-edit-row .vl-btn-sm.vl-btn-secondary.vl-btn-now:hover:not(:disabled) {
         background: rgba(6, 182, 212, 0.2);
         border-color: var(--vl-accent);
         transform: translateY(-1px);
         box-shadow: 0 2px 8px rgba(6, 182, 212, 0.25);
     }
-    .vl-add-form-row-actions .vl-btn-sm.vl-btn-primary {
+    .vl-add-form-row-actions .vl-btn-sm.vl-btn-secondary:not(.vl-btn-now),
+    .vl-edit-row .vl-btn-sm.vl-btn-secondary:not(.vl-btn-now) {
+        background: var(--vl-border);
+        color: var(--vl-text);
+    }
+    .vl-add-form-row-actions .vl-btn-sm.vl-btn-secondary:not(.vl-btn-now):hover:not(:disabled),
+    .vl-edit-row .vl-btn-sm.vl-btn-secondary:not(.vl-btn-now):hover:not(:disabled) {
+        background: #d1d5db;
+        transform: translateY(-1px);
+    }
+    .vl-add-form-row-actions .vl-btn-sm.vl-btn-primary,
+    .vl-edit-row .vl-btn-sm.vl-btn-primary {
         background: linear-gradient(180deg, var(--vl-accent) 0%, var(--vl-accent-hover) 100%);
         color: #fff;
         box-shadow: 0 2px 6px rgba(6, 182, 212, 0.35);
     }
-    .vl-add-form-row-actions .vl-btn-sm.vl-btn-primary:hover:not(:disabled) {
+    .vl-add-form-row-actions .vl-btn-sm.vl-btn-primary:hover:not(:disabled),
+    .vl-edit-row .vl-btn-sm.vl-btn-primary:hover:not(:disabled) {
         background: linear-gradient(180deg, var(--vl-accent-hover) 0%, #0e7490 100%);
         transform: translateY(-1px);
         box-shadow: 0 4px 12px rgba(6, 182, 212, 0.4);
     }
-    .vl-add-form-row-actions .vl-btn-sm.vl-btn-primary:disabled {
+    .vl-add-form-row-actions .vl-btn-sm.vl-btn-primary:disabled,
+    .vl-edit-row .vl-btn-sm.vl-btn-primary:disabled {
         opacity: 0.55;
         cursor: not-allowed;
         transform: none;
@@ -1016,6 +1173,45 @@
         border-radius: var(--vl-radius-sm);
         background: #fff;
         transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+    }
+    .vl-note-item-editing {
+        grid-template-columns: 1fr;
+    }
+    .vl-note-actions {
+        display: flex;
+        gap: 0.25rem;
+    }
+    .vl-edit-form {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        width: 100%;
+    }
+    .vl-edit-input {
+        width: 100%;
+    }
+    .vl-edit-row {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+    .vl-btn-edit {
+        color: var(--vl-text-muted);
+        background: transparent;
+    }
+    .vl-btn-edit:hover {
+        color: var(--vl-accent);
+        background: #ecfeff;
+        border: 1px solid var(--vl-border);
+        border-radius: var(--vl-radius-sm);
+        background: #fff;
+        transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+    }
+    .vl-note-item .vl-btn-icon {
+        width: 1.5rem;
+        height: 1.5rem;
+        font-size: 0.95rem;
     }
 
     .vl-note-item:hover {

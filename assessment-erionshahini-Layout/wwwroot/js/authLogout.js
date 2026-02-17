@@ -9,15 +9,20 @@ window.loginFromBrowser = function (apiBaseUrl, email, password) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email, password: password })
     }).then(function (r) {
-        return r.json().then(function (data) {
+        return r.text().then(function (text) {
+            var data;
+            try { data = text ? JSON.parse(text) : {}; } catch (e) {
+                return { success: false, message: 'Invalid response (status ' + r.status + '). Server may be down or returned non-JSON.' };
+            }
             var token = data.accessToken || data.AccessToken || null;
             var ok = !!((data.success === true || data.Success === true) && token);
             return { success: ok, accessToken: token, message: data.message || data.Message || (r.ok ? null : 'Login failed') };
-        }).catch(function () {
-            return { success: false, message: 'Invalid response' };
         });
     }).catch(function (err) {
-        return { success: false, message: err.message || 'Network error' };
+        var msg = err.message || 'Network error';
+        if (msg === 'Failed to fetch')
+            msg = 'Cannot reach API. Is it running? Open http://localhost:7294/swagger to check.';
+        return { success: false, message: msg };
     });
 };
 
@@ -32,15 +37,20 @@ window.registerFromBrowser = function (apiBaseUrl, email, password) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email, password: password })
     }).then(function (r) {
-        return r.json().then(function (data) {
+        return r.text().then(function (text) {
+            var data;
+            try { data = text ? JSON.parse(text) : {}; } catch (e) {
+                return { success: false, message: 'Invalid response (status ' + r.status + '). Server may be down or returned non-JSON.' };
+            }
             var token = data.accessToken || data.AccessToken || null;
             var ok = !!((data.success === true || data.Success === true) && token);
             return { success: ok, accessToken: token, message: data.message || data.Message || (r.ok ? null : 'Register failed') };
-        }).catch(function () {
-            return { success: false, message: 'Invalid response' };
         });
     }).catch(function (err) {
-        return { success: false, message: err.message || 'Network error' };
+        var msg = err.message || 'Network error';
+        if (msg === 'Failed to fetch')
+            msg = 'Cannot reach API. Is it running? Open http://localhost:7294/swagger to check.';
+        return { success: false, message: msg };
     });
 };
 

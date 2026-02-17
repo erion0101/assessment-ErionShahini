@@ -8,7 +8,8 @@ public interface IBookmarkService
     Task<IReadOnlyList<BookmarkResponse>> GetByVideoIdAsync(Guid videoId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<BookmarkResponse>> GetMyBookmarksAsync(Guid userId, CancellationToken cancellationToken = default);
     Task<BookmarkResponse?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
-    Task<Result<BookmarkResponse>> UpdateAsync(Guid id, Guid userId, UpdateBookmarkRequest request, CancellationToken cancellationToken = default);
-    Task<Result<bool>> DeleteAsync(Guid id, Guid userId, CancellationToken cancellationToken = default);
+    Task<Result<BookmarkResponse>> UpdateAsync(Guid id, Guid userId, UpdateBookmarkRequest request, bool allowAdminBypass = false, CancellationToken cancellationToken = default);
+    Task<Result<bool>> DeleteAsync(Guid id, Guid userId, bool allowAdminBypass = false, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<BookmarkResponse>> GetAllBookmarksAsync(CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<AdminBookmarkResponse>> GetAllBookmarksWithDetailsAsync(CancellationToken cancellationToken = default);
 }

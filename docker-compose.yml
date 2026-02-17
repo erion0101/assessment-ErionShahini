@@ -6,6 +6,7 @@ services:
   sqlserver:
     image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: vl-sqlserver
+    restart: unless-stopped
     environment:
       ACCEPT_EULA: "Y"
       MSSQL_SA_PASSWORD: "${MSSQL_SA_PASSWORD:-YourStrong@Passw0rd}"
@@ -19,6 +20,7 @@ services:
       context: .
       dockerfile: assessment-erionshahini-API/Dockerfile
     container_name: vl-api
+    restart: unless-stopped
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: "http://+:8080"
@@ -37,10 +39,12 @@ services:
       context: .
       dockerfile: assessment-erionshahini-Layout/Dockerfile
     container_name: vl-blazor
+    restart: unless-stopped
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: "http://+:80"
       ApiSettings__BaseUrl: "http://api:8080"
+      ApiSettings__BrowserBaseUrl: "http://localhost:7294"
       ApiSettings__StreamTokenSecret: "${JWT_SECRET:-@kjans1231ASDAOLM*(*23123abcdefghi}"
     ports:
       - "5206:80"

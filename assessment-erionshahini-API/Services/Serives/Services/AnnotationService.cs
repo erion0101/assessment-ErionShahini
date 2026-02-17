@@ -56,12 +56,12 @@ public class AnnotationService : IAnnotationService
         return annotation == null ? null : ToResponse(annotation);
     }
 
-    public async Task<Result<AnnotationResponse>> UpdateAsync(Guid id, Guid userId, UpdateAnnotationRequest request, CancellationToken cancellationToken = default)
+    public async Task<Result<AnnotationResponse>> UpdateAsync(Guid id, Guid userId, UpdateAnnotationRequest request, bool allowAdminBypass = false, CancellationToken cancellationToken = default)
     {
         var annotation = await _annotationRepository.GetByIdAsync(id, cancellationToken);
         if (annotation == null)
             return Result<AnnotationResponse>.Failure("Annotation not found.");
-        if (annotation.UserId != userId)
+        if (!allowAdminBypass && annotation.UserId != userId)
             return Result<AnnotationResponse>.Failure("You can only update your own annotation.");
 
         annotation.TimestampSeconds = request.TimestampSeconds;
@@ -70,12 +70,12 @@ public class AnnotationService : IAnnotationService
         return Result<AnnotationResponse>.Success(ToResponse(annotation));
     }
 
-    public async Task<Result<bool>> DeleteAsync(Guid id, Guid userId, CancellationToken cancellationToken = default)
+    public async Task<Result<bool>> DeleteAsync(Guid id, Guid userId, bool allowAdminBypass = false, CancellationToken cancellationToken = default)
     {
         var annotation = await _annotationRepository.GetByIdAsync(id, cancellationToken);
         if (annotation == null)
             return Result<bool>.Failure("Annotation not found.");
-        if (annotation.UserId != userId)
+        if (!allowAdminBypass && annotation.UserId != userId)
             return Result<bool>.Failure("You can only delete your own annotation.");
 
         await _annotationRepository.DeleteAsync(annotation, cancellationToken);
@@ -86,6 +86,27 @@ public class AnnotationService : IAnnotationService
     {
         var list = await _annotationRepository.GetAllAsync(cancellationToken);
         return list.Select(ToResponse).ToList();
+    }
+
+    public async Task<IReadOnlyList<AdminAnnotationResponse>> GetAllAnnotationsWithDetailsAsync(CancellationToken cancellationToken = default)
+    {
+        var list = await _annotationRepository.GetAllWithDetailsAsync(cancellationToken);
+        return list.Select(ToAdminResponse).ToList();
+    }
+
+    private static AdminAnnotationResponse ToAdminResponse(Annotation a)
+    {
+        return new AdminAnnotationResponse
+        {
+            Id = a.Id,
+            VideoId = a.VideoId,
+            UserId = a.UserId,
+            VideoTitle = a.Video?.Title ?? "",
+            UserName = a.User?.Email ?? a.User?.UserName ?? a.UserId.ToString("N")[..8],
+            TimestampSeconds = a.TimestampSeconds,
+            Description = a.Description,
+            CreatedAt = a.CreatedAt
+        };
     }
 
     private static AnnotationResponse ToResponse(Annotation a)

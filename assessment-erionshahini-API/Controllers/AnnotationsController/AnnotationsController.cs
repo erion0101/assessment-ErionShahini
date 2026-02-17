@@ -68,7 +68,8 @@ public class AnnotationsController : ControllerBase
     {
         var userId = GetCurrentUserId();
         if (userId == null) return Unauthorized();
-        var result = await _annotationService.UpdateAsync(id, userId.Value, request, cancellationToken);
+        var allowAdminBypass = User.IsInRole("Admin");
+        var result = await _annotationService.UpdateAsync(id, userId.Value, request, allowAdminBypass, cancellationToken);
         if (!result.IsSuccess)
             return result.Error == "Annotation not found." ? NotFound() : BadRequest(result.Error);
 
@@ -81,7 +82,8 @@ public class AnnotationsController : ControllerBase
     {
         var userId = GetCurrentUserId();
         if (userId == null) return Unauthorized();
-        var result = await _annotationService.DeleteAsync(id, userId.Value, cancellationToken);
+        var allowAdminBypass = User.IsInRole("Admin");
+        var result = await _annotationService.DeleteAsync(id, userId.Value, allowAdminBypass, cancellationToken);
         if (!result.IsSuccess)
             return result.Error == "Annotation not found." ? NotFound() : BadRequest(result.Error);
 

@@ -17,7 +17,7 @@
         if (TokenStorage.HasToken())
             return;
 
-        var apiBaseUrl = Config["ApiSettings:BaseUrl"]?.TrimEnd('/') ?? "";
+        var apiBaseUrl = (Config["ApiSettings:BrowserBaseUrl"] ?? Config["ApiSettings:BaseUrl"])?.TrimEnd('/') ?? "";
         if (string.IsNullOrEmpty(apiBaseUrl))
             return;
 
